@@ -1,7 +1,7 @@
 import http from "node:http";
 import https from "node:https";
 import { captureAuthorizationCode } from "./browser-sso";
-import type { GradeInfo, SessionInfo, StudentInfo } from "./types";
+import type { GradeInfo, SessionInfo, SomtodayGrade, SomtodayListResponse, StudentInfo } from "./types";
 import { updateSession, type StoredSession } from "./session";
 
 const CLIENT_ID = "somtoday-leerling-web";
@@ -299,21 +299,47 @@ type RawStudent = {
   leerlingnummer?: number | string;
   email?: string;
 };
-type RawGrade = {
-  type?: string;
-  resultaat?: string;
-  geldendResultaat?: string;
-  geldendResultaatCijferInvoer?: string;
-  datumInvoer?: string;
-  omschrijving?: string;
-  vak?: { naam?: string; afkorting?: string };
-  additionalObjects?: Record<string, unknown>;
-};
 
 const GRADE_QUERY =
   "type=Toetskolom&type=DeeltoetsKolom&type=Werkstukcijferkolom&type=Advieskolom" +
   "&additional=vaknaam&additional=resultaatkolom&additional=naamalternatiefniveau" +
   "&additional=vakuuid&additional=lichtinguuid&sort=desc-geldendResultaatCijferInvoer";
+
+function asText(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return null;
+}
+
+/** Display score from a raw Somtoday grade (examen + voortgang shapes). */
+export function somtodayGradeResult(grade: SomtodayGrade): string | null {
+  return (
+    asText(grade.label) ||
+    asText(grade.formattedResultaat) ||
+    asText(grade.geldendResultaat) ||
+    asText(grade.resultaat) ||
+    asText(grade.geldendResultaatCijferInvoer) ||
+    asText(grade.cijfer)
+  );
+}
+
+export function somtodayGradeSubject(grade: SomtodayGrade): string {
+  const vak = grade.additionalObjects?.vaknaam;
+  if (typeof vak === "string" && vak) return vak;
+  if (vak && typeof vak === "object") {
+    return asText(vak.naam) || asText(vak.afkorting) || "Vak";
+  }
+  return asText(grade.vak?.naam) || asText(grade.vak?.afkorting) || "Vak";
+}
+
+export function somtodayGradeDate(grade: SomtodayGrade): string | null {
+  const raw =
+    grade.datumInvoer || grade.datumInvoerEerstePoging || grade.datumInvoerTweedePoging || null;
+  if (!raw) return null;
+  return raw.slice(0, 10);
+}
 
 function asNumericId(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
@@ -586,27 +612,20 @@ export async function loadSessionInfo(session: StoredSession): Promise<SessionIn
       `/rest/v1/geldendvoortgangsdossierresultaten/leerling/${studentId}?${GRADE_QUERY}`,
       `/rest/v1/geldendexamendossierresultaten/leerling/${studentId}?${GRADE_QUERY}`,
     ];
-    const items: RawGrade[] = [];
+    const items: SomtodayGrade[] = [];
     for (const path of dossiers) {
       const gradesResponse = await somFetch(session, path);
       if (!gradesResponse.ok) continue;
-      const gradesPayload = (await gradesResponse.json()) as { items?: RawGrade[] };
+      const gradesPayload = (await gradesResponse.json()) as SomtodayListResponse<SomtodayGrade>;
       items.push(...(gradesPayload.items ?? []));
     }
     for (const grade of items) {
-      const result = grade.geldendResultaat || grade.resultaat || grade.geldendResultaatCijferInvoer;
+      const result = somtodayGradeResult(grade);
       if (!result) continue;
-      const extra = grade.additionalObjects ?? {};
-      const vaknaam = extra.vaknaam;
-      const subject =
-        (typeof vaknaam === "string" ? vaknaam : null) ||
-        grade.vak?.naam ||
-        grade.vak?.afkorting ||
-        "Vak";
       grades.push({
-        subject,
-        result: String(result),
-        date: grade.datumInvoer ? grade.datumInvoer.slice(0, 10) : null,
+        subject: somtodayGradeSubject(grade),
+        result,
+        date: somtodayGradeDate(grade),
         description: grade.omschrijving ?? null,
       });
       if (grades.length === 8) break;

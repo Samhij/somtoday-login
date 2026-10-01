@@ -1,20 +1,6 @@
-export type SsoProvider = {
-  name: string;
-  issuer: string;
-};
+/** Ambient types for Cyfers plugin scripts (injected `window.cyfers`). */
 
-export type School = {
-  uuid: string;
-  naam: string;
-  plaats: string;
-  providers: SsoProvider[];
-};
-
-export type SignInMethod =
-  | { kind: "password" }
-  | { kind: "sso"; providers: SsoProvider[] };
-
-export type StudentInfo = {
+type CyfersStudent = {
   id: number;
   uuid: string | null;
   href: string | null;
@@ -23,34 +9,23 @@ export type StudentInfo = {
   email: string | null;
 };
 
-/** Normalized grade for host UI (session overview). */
-export type GradeInfo = {
-  subject: string;
-  result: string;
-  date: string | null;
-  description: string | null;
-};
-
-export type SessionInfo = {
+type CyfersContext = {
   schoolName: string;
   tenant: string | null;
   schoolYear: string | null;
-  students: StudentInfo[];
-  grades: GradeInfo[];
+  students: CyfersStudent[];
 };
 
 /**
  * Raw Somtoday geldend voortgangs-/examendossier resultaat.
- * Field names differ by dossier type; prefer helpers in lib/somtoday when reading.
+ * Prefer label / formattedResultaat / cijfer for display — geldendResultaat is often absent.
  */
-export type SomtodayGrade = {
+type SomtodayGrade = {
   $type?: string;
   type?: string;
-  /** Voortgang-style result strings */
   resultaat?: string;
   geldendResultaat?: string | number;
   geldendResultaatCijferInvoer?: string | number;
-  /** Examen-/label-style result fields (common on RGeldendExamendossierResultaat) */
   cijfer?: number;
   cijferEerstePoging?: number;
   label?: string;
@@ -81,6 +56,20 @@ export type SomtodayGrade = {
   };
 };
 
-export type SomtodayListResponse<T> = {
+type SomtodayListResponse<T> = {
   items?: T[];
+};
+
+declare const cyfers: {
+  getContext(): Promise<CyfersContext>;
+  fetch(path: string, init?: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  }): Promise<unknown>;
+  storage: {
+    get(key: string): Promise<string | null>;
+    set(key: string, value: string): Promise<unknown>;
+    remove(key: string): Promise<unknown>;
+  };
 };

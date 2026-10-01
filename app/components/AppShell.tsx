@@ -17,6 +17,7 @@ export type PluginSummary = {
   author: string;
   enabled: boolean;
   builtin: boolean;
+  removable: boolean;
   kind: PluginKind;
   nav: { label: string; icon: string; order: number };
   permissions: { api: string[] };
@@ -95,7 +96,10 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     await loadPlugins();
   }
 
-  async function remove(id: string) {
+  async function remove(id: string, name: string) {
+    if (!window.confirm(`Plugin “${name}” verwijderen? Dit kan niet ongedaan worden gemaakt.`)) {
+      return;
+    }
     setError(null);
     const response = await fetch(`/api/plugins/${encodeURIComponent(id)}`, { method: "DELETE" });
     const payload = (await response.json()) as { error?: string };
@@ -191,6 +195,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
               <h1>Plugins</h1>
               <p className="lede">
                 Upload een .zip. Pagina-plugins komen in de zijbalk; widgets alleen op Overzicht.
+                Geüploade plugins kun je hier verwijderen; ingebouwde plugins alleen uitzetten.
               </p>
 
               <form className="upload-form" onSubmit={(event) => void onUpload(event)}>
@@ -223,8 +228,12 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                         />
                         <span>{plugin.enabled ? "Aan" : "Uit"}</span>
                       </label>
-                      {!plugin.builtin ? (
-                        <button className="ghost" type="button" onClick={() => void remove(plugin.id)}>
+                      {plugin.removable ? (
+                        <button
+                          className="ghost"
+                          type="button"
+                          onClick={() => void remove(plugin.id, plugin.name)}
+                        >
                           Verwijderen
                         </button>
                       ) : null}

@@ -206,6 +206,27 @@ async function startNextServer(env: NodeJS.ProcessEnv, port: number): Promise<vo
   await waitForUrl(`http://127.0.0.1:${port}`);
 }
 
+function installDevMenu() {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: "Weergave",
+      submenu: [
+        { role: "reload", label: "Vernieuwen", accelerator: "CmdOrControl+R" },
+        { role: "forceReload", label: "Hard vernieuwen", accelerator: "CmdOrControl+Shift+R" },
+        { type: "separator" },
+        { role: "toggleDevTools", label: "Developer Tools", accelerator: "F12" },
+      ],
+    },
+  ];
+  if (process.platform === "darwin") {
+    template.unshift({
+      label: app.name,
+      submenu: [{ role: "about" }, { type: "separator" }, { role: "quit" }],
+    });
+  }
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function createMainWindow(port: number) {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -214,7 +235,7 @@ function createMainWindow(port: number) {
     minHeight: 600,
     show: false,
     title: "Cyfers",
-    autoHideMenuBar: true,
+    autoHideMenuBar: !isDev,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
@@ -223,7 +244,7 @@ function createMainWindow(port: number) {
     },
   });
 
-  mainWindow.setMenuBarVisibility(false);
+  mainWindow.setMenuBarVisibility(isDev);
   mainWindow.once("ready-to-show", () => mainWindow?.show());
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -283,7 +304,8 @@ if (!gotLock) {
   });
 
   app.whenReady().then(async () => {
-    Menu.setApplicationMenu(null);
+    if (isDev) installDevMenu();
+    else Menu.setApplicationMenu(null);
     try {
       await boot();
     } catch (error) {

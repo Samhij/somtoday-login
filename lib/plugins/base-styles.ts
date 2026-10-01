@@ -93,7 +93,69 @@ button, input, select, textarea {
 }
 
 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-elevated);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.2;
   cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease,
+    transform 120ms ease, opacity 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+button.primary:hover:not(:disabled) {
+  border-color: transparent;
+  filter: brightness(1.05);
+}
+
+button.ghost {
+  padding: 0.45rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+button.ghost:hover:not(:disabled) {
+  border-bottom-color: var(--ink);
+}
+
+button.ghost:active:not(:disabled) {
+  transform: none;
 }
 
 .muted,
@@ -113,5 +175,45 @@ button {
 .lede {
   color: var(--muted);
   max-width: 36rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+thead {
+  background: var(--bg-elevated);
+}
+
+th,
+td {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--bg-elevated);
+}
+
+tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
 }
 `.trim();

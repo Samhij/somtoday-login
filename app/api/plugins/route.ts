@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireStoredSession } from "@/lib/plugins/auth";
-import { installPluginZip, listPlugins } from "@/lib/plugins/registry";
+import { installPluginZip, isManagedBuiltin, listPlugins } from "@/lib/plugins/registry";
 
 export async function GET() {
   const session = await requireStoredSession();
@@ -17,6 +17,7 @@ export async function GET() {
         author: plugin.author,
         enabled: plugin.enabled,
         builtin: Boolean(plugin.builtin),
+        removable: !isManagedBuiltin(plugin.id),
         kind: plugin.kind ?? "page",
         nav: plugin.nav,
         permissions: plugin.permissions,
