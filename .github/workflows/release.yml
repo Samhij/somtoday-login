@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pkg.outputs.version }}
+      tag: ${{ steps.pkg.outputs.tag }}
+      should_release: ${{ steps.pkg.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: pkg
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  pack:
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact: linux
+          - os: windows-latest
+            platform: win
+            artifact: win
+          - os: macos-latest
+            platform: mac
+            artifact: mac
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Electron main
+        run: npm run build:electron
+
+      - name: Build Next standalone
+        run: npm run build:next
+
+      - name: Pack Linux
+        if: matrix.platform == 'linux'
+        run: npx electron-builder --linux AppImage deb --publish never
+
+      - name: Pack Windows
+        if: matrix.platform == 'win'
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Pack macOS
+        if: matrix.platform == 'mac'
+        run: npx electron-builder --mac dmg --publish never
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          mkdir -p dist-artifacts
+          shopt -s nullglob
+          for f in release/*.AppImage release/*.deb release/*.dmg release/*.exe release/*.zip release/*Setup*.exe; do
+            cp "$f" dist-artifacts/
+          done
+          ls -lh dist-artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cyfers-${{ needs.version.outputs.version }}-${{ matrix.artifact }}
+          path: dist-artifacts/*
+          if-no-files-found: error
+
+  release:
+    needs: [version, pack]
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${{ needs.version.outputs.tag }}"
+          git push origin "${{ needs.version.outputs.tag }}"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: cyfers-${{ needs.version.outputs.version }}-*
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -lh artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Cyfers ${{ needs.version.outputs.version }}
+          draft: false
+          generate_release_notes: true
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
