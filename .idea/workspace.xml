@@ -4,38 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
-      <change afterPath="$PROJECT_DIR$/electron-assets/.gitkeep" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/electron/main.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/electron/preload.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/electron/sso.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/electron/tsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/base-styles.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/public/.gitkeep" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/after-pack.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/ensure-electron.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/prepare-standalone.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS).">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/login/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/login/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/plugins/[id]/entry/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/plugins/[id]/entry/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/components/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/AppShell.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/components/PluginFrame.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/PluginFrame.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/plugins.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/plugins.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/browser-sso.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/browser-sso.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/plugins/registry.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/plugins/registry.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/plugins/sdk.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/plugins/sdk.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/session.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,7 +151,7 @@
       <option name="presentableId" value="Default" />
       <updated>1790858634027</updated>
       <workItem from="1790858635473" duration="1416000" />
-      <workItem from="1790860505615" duration="5983000" />
+      <workItem from="1790860505615" duration="6736000" />
     </task>
     <task id="LOCAL-00001" summary="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
       <option name="closed" value="true" />
@@ -191,7 +161,23 @@
       <option name="project" value="LOCAL" />
       <updated>1790862352398</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Migrate project to Electron with desktop packaging:&#10;- Add Electron integration and main process scripts.&#10;- Update build pipeline for Electron support (`after-pack.js` and `electron-builder` config).&#10;- Refactor `rewritePluginHtml` to support plugin variants.&#10;- Update `package.json` dependencies and scripts for desktop packaging.&#10;- Document changes and build commands in `AGENTS.md`.">
+      <option name="closed" value="true" />
+      <created>1790871876898</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1790871876898</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS).">
+      <option name="closed" value="true" />
+      <created>1790871908453</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1790871908453</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -199,6 +185,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`." />
-    <option name="LAST_COMMIT_MESSAGE" value="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`." />
+    <MESSAGE value="Migrate project to Electron with desktop packaging:&#10;- Add Electron integration and main process scripts.&#10;- Update build pipeline for Electron support (`after-pack.js` and `electron-builder` config).&#10;- Refactor `rewritePluginHtml` to support plugin variants.&#10;- Update `package.json` dependencies and scripts for desktop packaging.&#10;- Document changes and build commands in `AGENTS.md`." />
+    <MESSAGE value="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS)." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS)." />
   </component>
 </project>

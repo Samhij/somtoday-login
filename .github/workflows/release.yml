@@ -59,6 +59,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install Linux packaging tools
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libarchive-tools fakeroot
+
       - name: Install dependencies
         run: npm ci
 
@@ -70,7 +76,7 @@ jobs:
 
       - name: Pack Linux
         if: matrix.platform == 'linux'
-        run: npx electron-builder --linux AppImage deb --publish never
+        run: npx electron-builder --linux AppImage deb rpm pacman --publish never
 
       - name: Pack Windows
         if: matrix.platform == 'win'
@@ -85,7 +91,17 @@ jobs:
         run: |
           mkdir -p dist-artifacts
           shopt -s nullglob
-          for f in release/*.AppImage release/*.deb release/*.dmg release/*.exe release/*.zip release/*Setup*.exe; do
+          for f in \
+            release/*.AppImage \
+            release/*.deb \
+            release/*.rpm \
+            release/*.pacman \
+            release/*.pkg.tar.* \
+            release/*.dmg \
+            release/*.exe \
+            release/*.zip \
+            release/*Setup*.exe
+          do
             cp "$f" dist-artifacts/
           done
           ls -lh dist-artifacts

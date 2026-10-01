@@ -15,7 +15,7 @@
     "build": "npm run build:electron && npm run build:next",
     "start": "electron .",
     "pack": "npm run build && electron-builder --publish never",
-    "pack:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
+    "pack:linux": "npm run build && electron-builder --linux AppImage deb rpm pacman --publish never",
     "pack:win": "npm run build && electron-builder --win nsis --publish never",
     "pack:mac": "npm run build && electron-builder --mac dmg --publish never",
     "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit"
@@ -57,7 +57,7 @@
       }
     ],
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": ["AppImage", "deb", "rpm", "pacman"],
       "category": "Education",
       "maintainer": "Cyfers"
     },
