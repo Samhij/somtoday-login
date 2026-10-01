@@ -1,0 +1,52 @@
+:root {
+  color-scheme: light dark;
+  --ink: #10141c;
+  --muted: #5a6578;
+  --line: #c5ccd8;
+  --accent: #c43c11;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #eef1f6;
+    --muted: #9aa5b8;
+    --line: #2a3344;
+    --accent: #ff6a35;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0.25rem 0.15rem 0.5rem;
+  color: var(--ink);
+  background: transparent;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.row strong {
+  display: block;
+}
+
+.row b {
+  font-family: Syne, Georgia, serif;
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+.muted,
+.empty {
+  color: var(--muted);
+  font-size: 0.92rem;
+}

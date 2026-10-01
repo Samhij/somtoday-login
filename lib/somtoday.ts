@@ -1,3 +1,5 @@
+import http from "node:http";
+import https from "node:https";
 import { captureAuthorizationCode } from "./browser-sso";
 import type { GradeInfo, SessionInfo, StudentInfo } from "./types";
 import { updateSession, type StoredSession } from "./session";
@@ -152,10 +154,10 @@ async function openLogin(tenantUuid: string, jar: CookieJar) {
       continue;
     }
     const html = await response.text();
-    if (!response.ok) throw new Error("Somtoday did not open a login page.");
+    if (!response.ok) throw new Error("Inlogpagina openen mislukt.");
     return parseLoginPage(current, html);
   }
-  throw new Error("Somtoday did not open a login page.");
+  throw new Error("Inlogpagina openen mislukt.");
 }
 
 async function chase(response: Response, jar: CookieJar, baseUrl: string) {
@@ -206,7 +208,7 @@ async function exchangeCode(code: string): Promise<TokenResponse> {
     | (TokenResponse & { error?: string; error_description?: string })
     | null;
   if (response.ok && payload?.access_token && payload.refresh_token) return payload;
-  throw new Error(payload?.error_description || payload?.error || "Somtoday rejected the login code.");
+  throw new Error(payload?.error_description || payload?.error || "Inlogcode geweigerd.");
 }
 
 async function loginThroughSchoolProvider(tenantUuid: string, username: string) {
@@ -225,7 +227,7 @@ export async function loginWithPassword(tenantUuid: string, username: string, pa
   for (let step = 0; step < 4; step += 1) {
     if (page.error) throw new Error(page.error);
     if (!page.hasUsername && !page.hasPassword) {
-      throw new Error("Somtoday did not show a sign-in form.");
+      throw new Error("Geen inlogformulier gevonden.");
     }
 
     const fields: Record<string, string> = { loginLink: "x" };
@@ -242,16 +244,16 @@ export async function loginWithPassword(tenantUuid: string, username: string, pa
     if (next.location && isExternalLogin(next.location)) {
       return loginThroughSchoolProvider(tenantUuid, username);
     }
-    if (!next.html) throw new Error("Sign-in failed. Check the username and password for this school.");
+    if (!next.html) throw new Error("Inloggen mislukt. Controleer gebruikersnaam en wachtwoord.");
 
     page = parseLoginPage(next.url, next.html);
     if (page.error) throw new Error(page.error);
     if (!page.hasPassword || sentPassword) {
-      throw new Error("Sign-in failed. Check the username and password for this school.");
+      throw new Error("Inloggen mislukt. Controleer gebruikersnaam en wachtwoord.");
     }
   }
 
-  throw new Error("Sign-in did not finish.");
+  throw new Error("Inloggen is niet afgerond.");
 }
 
 function clientIdFrom(refreshToken: string) {
@@ -281,14 +283,16 @@ export async function refreshTokens(refreshToken: string): Promise<TokenResponse
   });
   const payload = (await response.json().catch(() => null)) as TokenResponse | null;
   if (!response.ok || !payload?.access_token || !payload.refresh_token) {
-    throw new Error("The saved Somtoday session expired. Sign in again.");
+    throw new Error("Je sessie is verlopen. Log opnieuw in.");
   }
   return payload;
 }
 
-type RawLink = { id?: number; rel?: string };
+type RawLink = { id?: number | string; rel?: string; href?: string };
 type RawStudent = {
   links?: RawLink[];
+  UUID?: string;
+  uuid?: string;
   roepnaam?: string;
   tussenvoegsel?: string;
   achternaam?: string;
@@ -299,55 +303,193 @@ type RawGrade = {
   type?: string;
   resultaat?: string;
   geldendResultaat?: string;
+  geldendResultaatCijferInvoer?: string;
   datumInvoer?: string;
   omschrijving?: string;
   vak?: { naam?: string; afkorting?: string };
+  additionalObjects?: Record<string, unknown>;
 };
 
+const GRADE_QUERY =
+  "type=Toetskolom&type=DeeltoetsKolom&type=Werkstukcijferkolom&type=Advieskolom" +
+  "&additional=vaknaam&additional=resultaatkolom&additional=naamalternatiefniveau" +
+  "&additional=vakuuid&additional=lichtinguuid&sort=desc-geldendResultaatCijferInvoer";
+
+function asNumericId(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === "string" && /^\d+$/.test(value)) return Number(value);
+  return null;
+}
+
 function resourceId(links: RawLink[] | undefined) {
-  const self = links?.find((link) => link.rel === "self") ?? links?.[0];
-  return typeof self?.id === "number" ? self.id : null;
+  const leerlingLink =
+    links?.find((link) => (link.href || "").includes("/leerlingen/")) ??
+    links?.find((link) => link.rel === "self") ??
+    links?.[0];
+  const fromId = asNumericId(leerlingLink?.id);
+  if (fromId) return fromId;
+  const href = leerlingLink?.href ?? "";
+  const match = href.match(/\/leerlingen\/(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+function studentHref(links: RawLink[] | undefined) {
+  return links?.find((link) => (link.href || "").includes("/leerlingen/"))?.href ?? null;
+}
+
+function mapStudent(student: RawStudent): StudentInfo {
+  return {
+    id: resourceId(student.links) ?? 0,
+    uuid: student.UUID || student.uuid || null,
+    href: studentHref(student.links),
+    name: studentName(student) || "Student",
+    studentNumber: student.leerlingnummer == null ? null : String(student.leerlingnummer),
+    email: student.email ?? null,
+  };
+}
+
+async function adoptApiOrigin(session: StoredSession, items: RawStudent[]) {
+  for (const student of items) {
+    const href = studentHref(student.links);
+    if (!href) continue;
+    try {
+      const origin = new URL(href).origin;
+      const current = new URL(session.apiUrl).origin;
+      if (origin !== current) {
+        session.apiUrl = origin;
+        await updateSession(session);
+      }
+      return;
+    } catch {
+      continue;
+    }
+  }
+}
+
+function asHeaderRecord(init?: HeadersInit): Record<string, string> {
+  const record: Record<string, string> = {};
+  if (!init) return record;
+  if (init instanceof Headers) {
+    init.forEach((value, key) => {
+      record[key.toLowerCase()] = value;
+    });
+    return record;
+  }
+  if (Array.isArray(init)) {
+    for (const [key, value] of init) record[String(key).toLowerCase()] = String(value);
+    return record;
+  }
+  for (const [key, value] of Object.entries(init)) {
+    if (value == null) continue;
+    record[key.toLowerCase()] = String(value);
+  }
+  return record;
+}
+
+function incomingToHeaders(incoming: http.IncomingHttpHeaders): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(incoming)) {
+    if (value == null || key === "transfer-encoding") continue;
+    if (Array.isArray(value)) {
+      for (const item of value) headers.append(key, item);
+    } else {
+      headers.set(key, value);
+    }
+  }
+  return headers;
+}
+
+function outgoingHeaders(record: Record<string, string>): Record<string, string> {
+  const names: Record<string, string> = {
+    accept: "Accept",
+    authorization: "Authorization",
+    range: "Range",
+    "user-agent": "User-Agent",
+    "content-type": "Content-Type",
+    origin: "Origin",
+    referer: "Referer",
+    host: "Host",
+  };
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(record)) {
+    const lower = key.toLowerCase();
+    out[names[lower] || key] = value;
+  }
+  return out;
+}
+
+function nodeFetch(
+  url: string,
+  init: { method: string; headers: Record<string, string>; body?: string },
+  redirects = 0,
+): Promise<Response> {
+  const parsed = new URL(url);
+  const lib = parsed.protocol === "http:" ? http : https;
+  const method = init.method.toUpperCase();
+  const headers = outgoingHeaders({ ...init.headers, host: parsed.host });
+  const body = init.body;
+
+  return new Promise((resolve, reject) => {
+    const req = lib.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || undefined,
+        path: `${parsed.pathname}${parsed.search}`,
+        method,
+        headers,
+      },
+      (res) => {
+        const location = res.headers.location;
+        if (
+          location &&
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          redirects < 5
+        ) {
+          res.resume();
+          const next = new URL(location, parsed).toString();
+          resolve(nodeFetch(next, init, redirects + 1));
+          return;
+        }
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk as Buffer));
+        res.on("end", () => {
+          resolve(
+            new Response(Buffer.concat(chunks), {
+              status: res.statusCode ?? 502,
+              statusText: res.statusMessage,
+              headers: incomingToHeaders(res.headers),
+            }),
+          );
+        });
+      },
+    );
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
 }
 
 function studentName(student: RawStudent) {
   return [student.roepnaam, student.tussenvoegsel, student.achternaam].filter(Boolean).join(" ");
 }
 
-async function somFetch(session: StoredSession, path: string, headers?: HeadersInit) {
-  const response = await fetch(`${session.apiUrl}${path}`, {
-    headers: {
-      accept: "application/json",
-      authorization: `Bearer ${session.accessToken}`,
-      ...headers,
-    },
-  });
-  if (response.status !== 401) return response;
+let refreshChain: Promise<void> = Promise.resolve();
 
-  const tokens = await refreshTokens(session.refreshToken);
-  const next: StoredSession = {
-    ...session,
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    apiUrl: tokens.somtoday_api_url || session.apiUrl,
-    tenant: tokens.somtoday_tenant ?? session.tenant,
-    expiresAt: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-  };
-  await updateSession(next);
-  session.accessToken = next.accessToken;
-  session.refreshToken = next.refreshToken;
-  session.apiUrl = next.apiUrl;
-
-  return fetch(`${session.apiUrl}${path}`, {
-    headers: {
-      accept: "application/json",
-      authorization: `Bearer ${session.accessToken}`,
-      ...headers,
-    },
-  });
+async function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = refreshChain.then(fn, fn);
+  refreshChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
 }
 
-export async function loadSessionInfo(session: StoredSession): Promise<SessionInfo> {
-  if (Date.now() > session.expiresAt - 60_000) {
+async function applyTokens(session: StoredSession, force = false): Promise<void> {
+  await withRefreshLock(async () => {
+    if (!force && Date.now() <= session.expiresAt - 60_000) return;
     const tokens = await refreshTokens(session.refreshToken);
     session.accessToken = tokens.access_token;
     session.refreshToken = tokens.refresh_token;
@@ -355,17 +497,80 @@ export async function loadSessionInfo(session: StoredSession): Promise<SessionIn
     session.tenant = tokens.somtoday_tenant ?? session.tenant;
     session.expiresAt = Date.now() + (tokens.expires_in ?? 3600) * 1000;
     await updateSession(session);
-  }
+  });
+}
+
+async function ensureFreshSession(session: StoredSession): Promise<StoredSession> {
+  if (Date.now() <= session.expiresAt - 60_000) return session;
+  await applyTokens(session, false);
+  return session;
+}
+
+export async function somFetch(
+  session: StoredSession,
+  path: string,
+  init?: RequestInit & { headers?: HeadersInit },
+): Promise<Response> {
+  await ensureFreshSession(session);
+  const method = (init?.method ?? "GET").toUpperCase();
+  const headers = asHeaderRecord(init?.headers);
+  if (!headers.accept) headers.accept = "application/json";
+  if (method === "GET" && !headers.range) headers.range = "items=0-99";
+  headers.authorization = `Bearer ${session.accessToken}`;
+  headers["user-agent"] = BROWSER;
+  if (!headers.origin) headers.origin = "https://leerling.somtoday.nl";
+  if (!headers.referer) headers.referer = "https://leerling.somtoday.nl/";
+
+  const body =
+    typeof init?.body === "string" ? init.body : init?.body == null ? undefined : String(init.body);
+  const url = `${session.apiUrl.replace(/\/$/, "")}${path}`;
+  const response = await nodeFetch(url, { method, headers, body });
+  if (response.status !== 401) return response;
+
+  await applyTokens(session, true);
+  headers.authorization = `Bearer ${session.accessToken}`;
+  return nodeFetch(url, { method, headers, body });
+}
+
+export type PluginSessionContext = {
+  schoolName: string;
+  tenant: string | null;
+  schoolYear: string | null;
+  students: StudentInfo[];
+};
+
+export async function loadPluginContext(session: StoredSession): Promise<PluginSessionContext> {
+  await ensureFreshSession(session);
 
   const studentsResponse = await somFetch(session, "/rest/v1/leerlingen");
-  if (!studentsResponse.ok) throw new Error("Could not load student information.");
+  if (!studentsResponse.ok) throw new Error("Leerlinggegevens laden mislukt.");
   const studentsPayload = (await studentsResponse.json()) as { items?: RawStudent[] };
-  const students: StudentInfo[] = (studentsPayload.items ?? []).map((student) => ({
-    id: resourceId(student.links) ?? 0,
-    name: studentName(student) || "Student",
-    studentNumber: student.leerlingnummer == null ? null : String(student.leerlingnummer),
-    email: student.email ?? null,
-  }));
+  await adoptApiOrigin(session, studentsPayload.items ?? []);
+  const students: StudentInfo[] = (studentsPayload.items ?? []).map(mapStudent);
+
+  let schoolYear: string | null = null;
+  const yearResponse = await somFetch(session, "/rest/v1/schooljaren/huidig");
+  if (yearResponse.ok) {
+    const year = (await yearResponse.json()) as { naam?: string };
+    schoolYear = year.naam ?? null;
+  }
+
+  return {
+    schoolName: session.schoolName,
+    tenant: session.tenant,
+    schoolYear,
+    students,
+  };
+}
+
+export async function loadSessionInfo(session: StoredSession): Promise<SessionInfo> {
+  await ensureFreshSession(session);
+
+  const studentsResponse = await somFetch(session, "/rest/v1/leerlingen");
+  if (!studentsResponse.ok) throw new Error("Leerlinggegevens laden mislukt.");
+  const studentsPayload = (await studentsResponse.json()) as { items?: RawStudent[] };
+  await adoptApiOrigin(session, studentsPayload.items ?? []);
+  const students: StudentInfo[] = (studentsPayload.items ?? []).map(mapStudent);
 
   let schoolYear: string | null = null;
   const yearResponse = await somFetch(session, "/rest/v1/schooljaren/huidig");
@@ -377,23 +582,34 @@ export async function loadSessionInfo(session: StoredSession): Promise<SessionIn
   const grades: GradeInfo[] = [];
   const studentId = students.find((student) => student.id)?.id;
   if (studentId) {
-    const gradesResponse = await somFetch(session, `/rest/v1/resultaten/huidigVoorLeerling/${studentId}`, {
-      range: "items=0-24",
-    });
-    if (gradesResponse.ok) {
+    const dossiers = [
+      `/rest/v1/geldendvoortgangsdossierresultaten/leerling/${studentId}?${GRADE_QUERY}`,
+      `/rest/v1/geldendexamendossierresultaten/leerling/${studentId}?${GRADE_QUERY}`,
+    ];
+    const items: RawGrade[] = [];
+    for (const path of dossiers) {
+      const gradesResponse = await somFetch(session, path);
+      if (!gradesResponse.ok) continue;
       const gradesPayload = (await gradesResponse.json()) as { items?: RawGrade[] };
-      for (const grade of gradesPayload.items ?? []) {
-        if (grade.type && grade.type !== "Toetskolom") continue;
-        const result = grade.geldendResultaat || grade.resultaat;
-        if (!result) continue;
-        grades.push({
-          subject: grade.vak?.naam || grade.vak?.afkorting || "Subject",
-          result,
-          date: grade.datumInvoer ? grade.datumInvoer.slice(0, 10) : null,
-          description: grade.omschrijving ?? null,
-        });
-        if (grades.length === 8) break;
-      }
+      items.push(...(gradesPayload.items ?? []));
+    }
+    for (const grade of items) {
+      const result = grade.geldendResultaat || grade.resultaat || grade.geldendResultaatCijferInvoer;
+      if (!result) continue;
+      const extra = grade.additionalObjects ?? {};
+      const vaknaam = extra.vaknaam;
+      const subject =
+        (typeof vaknaam === "string" ? vaknaam : null) ||
+        grade.vak?.naam ||
+        grade.vak?.afkorting ||
+        "Vak";
+      grades.push({
+        subject,
+        result: String(result),
+        date: grade.datumInvoer ? grade.datumInvoer.slice(0, 10) : null,
+        description: grade.omschrijving ?? null,
+      });
+      if (grades.length === 8) break;
     }
   }
 

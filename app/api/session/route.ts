@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ session: info });
   } catch (error) {
     await clearSession();
-    const message = error instanceof Error ? error.message : "Sign in again.";
+    const message = error instanceof Error ? error.message : "Log opnieuw in.";
     return NextResponse.json({ session: null, error: message }, { status: 401 });
   }
 }

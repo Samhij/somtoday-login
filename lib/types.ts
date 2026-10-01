@@ -16,6 +16,8 @@ export type SignInMethod =
 
 export type StudentInfo = {
   id: number;
+  uuid: string | null;
+  href: string | null;
   name: string;
   studentNumber: string | null;
   email: string | null;

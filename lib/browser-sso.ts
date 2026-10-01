@@ -30,7 +30,7 @@ export async function captureAuthorizationCode(tenantUuid: string, username: str
       args: ["--no-first-run", "--no-default-browser-check", "--disable-blink-features=AutomationControlled"],
     });
   } catch {
-    throw new Error("Could not open a browser window for the school sign-in.");
+    throw new Error("Kon het school-inlogvenster niet openen.");
   }
 
   const page = await browser.newPage();
@@ -39,7 +39,7 @@ export async function captureAuthorizationCode(tenantUuid: string, username: str
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      reject(new Error("The school sign-in window timed out. Sign in there, then try again."));
+      reject(new Error("Inloggen duurde te lang. Probeer het opnieuw."));
     }, 4 * 60 * 1000);
 
     const finish = (value: string) => {
@@ -70,7 +70,7 @@ export async function captureAuthorizationCode(tenantUuid: string, username: str
         inspect(location);
       }
     });
-    browser.on("disconnected", () => fail(new Error("The school sign-in window was closed before it finished.")));
+    browser.on("disconnected", () => fail(new Error("Het inlogvenster is gesloten.")));
   });
 
   try {

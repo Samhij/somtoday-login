@@ -63,7 +63,7 @@ export async function loadSchools(): Promise<School[]> {
     },
   );
   if (!response.ok) {
-    throw new Error("Could not load the Somtoday school list.");
+    throw new Error("Scholenlijst laden mislukt.");
   }
   const schools = schoolsFrom(await response.json());
   cached = { at: Date.now(), schools };

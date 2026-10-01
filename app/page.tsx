@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AppShell } from "@/app/components/AppShell";
 import type { School, SessionInfo } from "@/lib/types";
 import { signInMethod } from "@/lib/method";
 
@@ -8,6 +9,27 @@ type LiveMethod = {
   hasPassword: boolean;
   providers: string[];
 };
+
+type Theme = "light" | "dark";
+
+function readTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "dark" ? "dark" : "light";
+}
+
+function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
+  return (
+    <button
+      className="theme-toggle"
+      type="button"
+      onClick={onToggle}
+      aria-label={theme === "dark" ? "Schakel naar licht thema" : "Schakel naar donker thema"}
+    >
+      {theme === "dark" ? "Licht" : "Donker"}
+    </button>
+  );
+}
 
 export default function HomePage() {
   const [schools, setSchools] = useState<School[]>([]);
@@ -23,6 +45,11 @@ export default function HomePage() {
   const selection = useRef<string | null>(null);
   const [liveMethod, setLiveMethod] = useState<LiveMethod | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    setTheme(readTheme());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,11 +62,11 @@ export default function HomePage() {
         const schoolPayload = (await schoolResponse.json()) as { schools?: School[]; error?: string };
         const sessionPayload = (await sessionResponse.json()) as { session?: SessionInfo | null };
         if (cancelled) return;
-        if (!schoolResponse.ok) throw new Error(schoolPayload.error || "Could not load schools.");
+        if (!schoolResponse.ok) throw new Error(schoolPayload.error || "Scholen laden mislukt.");
         setSchools(schoolPayload.schools ?? []);
         setSession(sessionPayload.session ?? null);
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Could not load Somtoday.");
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Laden mislukt.");
       } finally {
         if (!cancelled) {
           setLoadingSchools(false);
@@ -58,13 +85,20 @@ export default function HomePage() {
     const pool = needle
       ? schools.filter((school) => `${school.naam} ${school.plaats}`.toLowerCase().includes(needle))
       : schools;
-    return pool.slice(0, 12);
+    return pool;
   }, [query, schools]);
 
   const listedMethod = selected ? signInMethod(selected) : null;
   const providers =
     liveMethod?.providers ?? (listedMethod?.kind === "sso" ? listedMethod.providers.map((provider) => provider.name) : []);
   const hasPassword = liveMethod?.hasPassword ?? listedMethod?.kind === "password";
+  const ssoOnly = providers.length > 0 && !hasPassword;
+
+  function applyTheme(next: Theme) {
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+    setTheme(next);
+  }
 
   function chooseSchool(school: School) {
     selection.current = school.uuid;
@@ -76,12 +110,12 @@ export default function HomePage() {
       .then(async (response) => {
         const payload = (await response.json()) as { method?: LiveMethod; error?: string };
         if (selection.current !== school.uuid) return;
-        if (!response.ok || !payload.method) throw new Error(payload.error || "Could not detect the sign-in method.");
+        if (!response.ok || !payload.method) throw new Error(payload.error || "Inloggen niet mogelijk.");
         setLiveMethod(payload.method);
       })
       .catch((detectError: unknown) => {
         if (selection.current !== school.uuid) return;
-        setError(detectError instanceof Error ? detectError.message : "Could not detect the sign-in method.");
+        setError(detectError instanceof Error ? detectError.message : "Inloggen niet mogelijk.");
       })
       .finally(() => {
         if (selection.current === school.uuid) setDetecting(false);
@@ -100,16 +134,16 @@ export default function HomePage() {
         body: JSON.stringify({ uuid: selected.uuid, username, password }),
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Sign-in failed.");
+      if (!response.ok) throw new Error(payload.error || "Inloggen mislukt.");
       const sessionResponse = await fetch("/api/session");
       const sessionPayload = (await sessionResponse.json()) as { session?: SessionInfo | null; error?: string };
       if (!sessionResponse.ok || !sessionPayload.session) {
-        throw new Error(sessionPayload.error || "Signed in, but student information did not load.");
+        throw new Error(sessionPayload.error || "Gegevens laden mislukt.");
       }
       setPassword("");
       setSession(sessionPayload.session);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Sign-in failed.");
+      setError(submitError instanceof Error ? submitError.message : "Inloggen mislukt.");
     } finally {
       setSubmitting(false);
     }
@@ -120,86 +154,49 @@ export default function HomePage() {
     setSession(null);
   }
 
+  const toggle = (
+    <ThemeToggle theme={theme} onToggle={() => applyTheme(theme === "dark" ? "light" : "dark")} />
+  );
+
   if (loadingSession) {
     return (
-      <main>
-        <p className="eyebrow">Somtoday</p>
-        <h1>Checking your session</h1>
-      </main>
+      <div className="shell fade-in">
+        <div className="bar">
+          <p className="brand">Cyfers</p>
+          {toggle}
+        </div>
+        <h1>Even geduld</h1>
+        <p className="lede">Sessie controleren…</p>
+      </div>
     );
   }
 
   if (session) {
-    return (
-      <main>
-        <div className="top">
-          <div>
-            <p className="eyebrow">Signed in</p>
-            <h1>{session.schoolName}</h1>
-            <p className="lede">
-              {session.schoolYear ? `School year ${session.schoolYear}.` : "Student information from Somtoday."}
-              {session.tenant ? ` Tenant ${session.tenant}.` : ""}
-            </p>
-          </div>
-          <button className="ghost" type="button" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        </div>
-
-        <section className="students">
-          {session.students.length === 0 ? (
-            <p className="empty">Somtoday returned no students for this account.</p>
-          ) : (
-            session.students.map((student) => (
-              <article className="student" key={student.id || student.name}>
-                <strong>{student.name}</strong>
-                <p className="meta">
-                  {student.studentNumber ? `Student number ${student.studentNumber}` : "No student number"}
-                  {student.email ? ` · ${student.email}` : ""}
-                </p>
-              </article>
-            ))
-          )}
-        </section>
-
-        <h2>Recent grades</h2>
-        <section className="grades">
-          {session.grades.length === 0 ? (
-            <p className="empty">No test grades were returned for the current year.</p>
-          ) : (
-            session.grades.map((grade, index) => (
-              <article className="grade" key={`${grade.subject}-${grade.date}-${index}`}>
-                <strong>{grade.subject}</strong>
-                <b>{grade.result}</b>
-                <span className="meta">{grade.description || "Test"}</span>
-                <span className="meta">{grade.date || ""}</span>
-              </article>
-            ))
-          )}
-        </section>
-      </main>
-    );
+    return <AppShell schoolName={session.schoolName} onSignOut={() => void signOut()} themeToggle={toggle} />;
   }
 
   return (
-    <main>
-      <p className="eyebrow">Somtoday</p>
-      <h1>Sign in with your school</h1>
-      <p className="lede">
-        Choose your school. The page detects whether that school uses Somtoday credentials or an external sign-in, then
-        opens a session and shows the student record.
-      </p>
+    <div className="shell fade-in">
+      <div className="bar">
+        <p className="brand">Cyfers</p>
+        {toggle}
+      </div>
+      <h1>Inloggen</h1>
+      <p className="lede">Kies je school en log in.</p>
 
-      <section className="panel">
-        <label htmlFor="school">School</label>
-        <input
-          id="school"
-          type="search"
-          placeholder={loadingSchools ? "Loading schools…" : "Search by name or city"}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          disabled={loadingSchools}
-        />
+      <section className="block">
+        <div className="field">
+          <label htmlFor="school">School</label>
+          <input
+            id="school"
+            type="search"
+            placeholder={loadingSchools ? "Scholen laden…" : "Naam of plaats"}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            disabled={loadingSchools}
+          />
+        </div>
+
         <div className="results">
           {results.map((school) => {
             const schoolMethod = signInMethod(school);
@@ -212,39 +209,28 @@ export default function HomePage() {
               >
                 <span>
                   <strong>{school.naam}</strong>
-                  <span>{school.plaats}</span>
+                  {school.plaats && school.plaats !== "-" ? (
+                    <span className="place">{school.plaats}</span>
+                  ) : null}
                 </span>
-                <small>{schoolMethod.kind === "sso" ? "School SSO" : "Somtoday password"}</small>
+                <span className="tag">{schoolMethod.kind === "sso" ? "School" : "Wachtwoord"}</span>
               </button>
             );
           })}
-          {!loadingSchools && results.length === 0 ? <p className="empty">No schools match that search.</p> : null}
+          {!loadingSchools && results.length === 0 ? (
+            <p className="empty">Geen scholen gevonden.</p>
+          ) : null}
         </div>
 
         {selected ? (
           <>
-            <div className="method">
-              <strong>{selected.naam}</strong>
-              {detecting ? <p>Checking how this school signs in…</p> : null}
-              {!detecting && providers.length === 0 ? <p>This school uses a Somtoday username and password.</p> : null}
-              {!detecting && providers.length > 0 ? (
-                <>
-                  <p>
-                    {hasPassword
-                      ? "This school accepts a Somtoday password, and also an external sign-in."
-                      : `Continue with ${providers[0]}. A browser window opens for that sign-in, then this page shows the student record.`}
-                  </p>
-                  <div className="chips">
-                    {providers.map((provider) => (
-                      <span key={provider}>{provider}</span>
-                    ))}
-                  </div>
-                </>
-              ) : null}
-            </div>
+            <p className="selected-school">
+              {selected.naam}
+              {detecting ? <span>Bezig…</span> : null}
+            </p>
             <form onSubmit={(event) => void onSubmit(event)}>
-              <div>
-                <label htmlFor="username">Username</label>
+              <div className="field">
+                <label htmlFor="username">Gebruikersnaam</label>
                 <input
                   id="username"
                   type="text"
@@ -254,9 +240,9 @@ export default function HomePage() {
                   required
                 />
               </div>
-              {hasPassword || providers.length === 0 ? (
-                <div>
-                  <label htmlFor="password">Password</label>
+              {!ssoOnly ? (
+                <div className="field">
+                  <label htmlFor="password">Wachtwoord</label>
                   <input
                     id="password"
                     type="password"
@@ -269,13 +255,7 @@ export default function HomePage() {
               ) : null}
               <div className="actions">
                 <button className="primary" type="submit" disabled={submitting || detecting}>
-                  {submitting
-                    ? providers.length > 0 && !hasPassword
-                      ? "Waiting for the school window…"
-                      : "Signing in…"
-                    : providers.length > 0 && !hasPassword
-                      ? `Continue with ${providers[0]}`
-                      : "Sign in"}
+                  {submitting ? "Bezig…" : ssoOnly && providers[0] ? `Verder met ${providers[0]}` : "Inloggen"}
                 </button>
               </div>
             </form>
@@ -284,6 +264,6 @@ export default function HomePage() {
 
         {error ? <p className="error">{error}</p> : null}
       </section>
-    </main>
+    </div>
   );
 }
