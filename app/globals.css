@@ -1,0 +1,252 @@
+:root {
+  color-scheme: light;
+  --bg: #f3efe6;
+  --ink: #1d1a16;
+  --muted: #5e584f;
+  --line: #ddd4c6;
+  --card: #fffdf8;
+  --accent: #0c6b63;
+  --accent-ink: #f4fffd;
+  --danger: #8d2f2f;
+  --danger-bg: #fff1ef;
+  --shadow: 0 18px 50px rgba(60, 42, 20, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(12, 107, 99, 0.08), transparent 32rem),
+    var(--bg);
+  color: var(--ink);
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+main {
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.lede {
+  max-width: 38rem;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.panel {
+  margin-top: 28px;
+  padding: 22px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+
+input[type="search"],
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+}
+
+input:focus {
+  outline: 2px solid rgba(12, 107, 99, 0.35);
+  border-color: var(--accent);
+}
+
+.results {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  margin-top: 14px;
+  overflow: auto;
+}
+
+.school,
+.method,
+.student,
+.grade {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.school {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.school strong,
+.student strong {
+  display: block;
+}
+
+.school span,
+.meta,
+.empty {
+  color: var(--muted);
+}
+
+.school small,
+.method small {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.school.selected {
+  border-color: var(--accent);
+  background: #f3fbf9;
+}
+
+.method {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: #f6fbfa;
+}
+
+.method p,
+.student p {
+  margin: 6px 0 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.chips span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e7f5f3;
+  color: var(--accent);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.actions,
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+button.primary,
+button.ghost {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.error {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.students,
+.grades {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.student,
+.grade {
+  padding: 14px 16px;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+}
+
+.grade b {
+  font-size: 1.15rem;
+}
+
+h2 {
+  margin: 28px 0 0;
+  font-size: 1.15rem;
+}
+
+@media (max-width: 640px) {
+  .grade,
+  .actions,
+  .top,
+  .school {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+}
