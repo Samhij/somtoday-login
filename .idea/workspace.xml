@@ -4,19 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency.">
-      <change afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/store/install/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/store/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/compose.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/store.ts" afterDir="false" />
+    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/components/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/AppShell.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,61 +41,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0210618506545377" />
-      <entry key="MS500" value="1.5649480073633812" />
-      <entry key="S2" value="2.7084803871426253" />
-      <entry key="S5" value="3.942683399244744" />
-      <entry key="S10" value="4.767607021455263" />
-      <entry key="S30" value="5.532116983945428" />
-      <entry key="S60" value="5.78223581872953" />
-      <entry key="M2" value="6.901225996830726" />
-      <entry key="M5" value="30.828174442060124" />
-      <entry key="M10" value="101.20177656619323" />
-      <entry key="M15" value="168.87486575127272" />
-      <entry key="M30" value="309.80631860327645" />
-      <entry key="H1" value="439.65694387610785" />
-      <entry key="H2" value="531.4628676558817" />
-      <entry key="H4" value="587.0300842225655" />
-      <entry key="D1" value="639.6662722612265" />
-      <entry key="W1" value="649.363010972744" />
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0" />
+      <entry key="S5" value="1.0" />
+      <entry key="S10" value="1.0000000005813254" />
+      <entry key="S30" value="1.002743243365474" />
+      <entry key="S60" value="1.1287603921804115" />
+      <entry key="M2" value="2.029839380979838" />
+      <entry key="M5" value="15.404066111318661" />
+      <entry key="M10" value="70.17621338034972" />
+      <entry key="M15" value="132.0420814888482" />
+      <entry key="M30" value="273.90604407272247" />
+      <entry key="H1" value="413.6438513629565" />
+      <entry key="H2" value="515.877184188981" />
+      <entry key="H4" value="578.7975805989839" />
+      <entry key="D1" value="638.9784546709787" />
+      <entry key="W1" value="650.1179618233033" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="1.9236769846520548E-280" />
-      <entry key="S2" value="1.1776955586933401E-70" />
-      <entry key="S5" value="1.0676115027504215E-28" />
-      <entry key="S10" value="1.0335318363859384E-14" />
-      <entry key="S30" value="2.416609002089759E-5" />
-      <entry key="S60" value="0.008683733752199095" />
-      <entry key="M2" value="0.30967696365774466" />
-      <entry key="M5" value="4.390185065444485" />
-      <entry key="M10" value="13.736314681994838" />
-      <entry key="M15" value="22.159720568920388" />
-      <entry key="M30" value="39.35906062513016" />
-      <entry key="H1" value="55.056224539123434" />
-      <entry key="H2" value="66.03819818157817" />
-      <entry key="H4" value="72.59323622749186" />
-      <entry key="D1" value="78.70117908987919" />
-      <entry key="W1" value="79.81280483970382" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="3.174152375344432E-120" />
+      <entry key="S5" value="1.587271205912795E-48" />
+      <entry key="S10" value="1.2602096641332709E-24" />
+      <entry key="S30" value="1.1983381101965402E-8" />
+      <entry key="S60" value="1.9337173345674856E-4" />
+      <entry key="M2" value="0.04621172132364093" />
+      <entry key="M5" value="2.0512572368641484" />
+      <entry key="M10" value="9.38942247599566" />
+      <entry key="M15" value="17.195311425677247" />
+      <entry key="M30" value="34.67109896934532" />
+      <entry key="H1" value="51.6734987398028" />
+      <entry key="H2" value="63.977304150363736" />
+      <entry key="H4" value="71.45152759188517" />
+      <entry key="D1" value="78.49351887673151" />
+      <entry key="W1" value="79.7826860007648" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.036151015674887134" />
-      <entry key="MS500" value="0.9895423686589268" />
-      <entry key="S2" value="2.481854303623434" />
-      <entry key="S5" value="3.8159793202277403" />
-      <entry key="S10" value="4.691892747172127" />
-      <entry key="S30" value="5.503055466314744" />
-      <entry key="S60" value="5.775575215812205" />
-      <entry key="M2" value="7.198949756115479" />
-      <entry key="M5" value="35.18336368344241" />
-      <entry key="M10" value="114.87976792992393" />
-      <entry key="M15" value="190.9703044560306" />
-      <entry key="M30" value="349.1074501707701" />
-      <entry key="H1" value="494.67257157315265" />
-      <entry key="H2" value="597.4766937727159" />
-      <entry key="H4" value="659.6099032244306" />
-      <entry key="D1" value="718.365020262716" />
-      <entry key="W1" value="729.1754633700801" />
+      <entry key="MS100" value="0.7526233737055336" />
+      <entry key="MS500" value="0.9447470409972061" />
+      <entry key="S2" value="0.9858909615070789" />
+      <entry key="S5" value="0.9943323153899832" />
+      <entry key="S10" value="0.9971621315166974" />
+      <entry key="S30" value="1.001781979861227" />
+      <entry key="S60" value="1.1281385336532905" />
+      <entry key="M2" value="2.0740305813254265" />
+      <entry key="M5" value="17.438877276017667" />
+      <entry key="M10" value="79.52572173862157" />
+      <entry key="M15" value="149.18748044429518" />
+      <entry key="M30" value="308.52609798488345" />
+      <entry key="H1" value="465.2792396891344" />
+      <entry key="H2" value="579.8308729213002" />
+      <entry key="H4" value="650.2359000108414" />
+      <entry key="D1" value="717.4695485450443" />
+      <entry key="W1" value="729.900295467712" />
     </decayedShown>
   </component>
   <component name="OptimizeOnSaveOptions">
@@ -127,39 +117,39 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;code.cleanup.on.save&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
-    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
-    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/sam/Projects/web/somtoday-login/data/plugins&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;npm.Next.js: server-side.executor&quot;: &quot;Run&quot;,
-    &quot;rearrange.code.on.save&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;actions.on.save&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/home/sam/Projects/web/somtoday-login/node_modules/typescript/lib&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "code.cleanup.on.save": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "javascript.preferred.runtime.type.id": "node",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/home/sam/Projects/web/somtoday-login/data/plugins",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "npm.Next.js: server-side.executor": "Run",
+    "rearrange.code.on.save": "true",
+    "settings.editor.selected.configurable": "actions.on.save",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/Users/sam/Projects/web/somtoday-login/node_modules/typescript/lib"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/data/plugins" />
@@ -186,7 +176,7 @@
       <workItem from="1790860505615" duration="6736000" />
       <workItem from="1790874727002" duration="5972000" />
       <workItem from="1790888830181" duration="1235000" />
-      <workItem from="1790890998653" duration="778000" />
+      <workItem from="1790890998653" duration="1053000" />
     </task>
     <task id="LOCAL-00001" summary="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
       <option name="closed" value="true" />
@@ -228,7 +218,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790889338096</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`.">
+      <option name="closed" value="true" />
+      <created>1790891911116</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1790891911116</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -240,6 +238,7 @@
     <MESSAGE value="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS)." />
     <MESSAGE value="Add RPM and Pacman packaging for Linux builds in GitHub Actions workflow:&#10;- Update `electron-builder` configuration to include `rpm` and `pacman` targets.&#10;- Install required Linux packaging tools in workflow." />
     <MESSAGE value="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency." />
-    <option name="LAST_COMMIT_MESSAGE" value="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency." />
+    <MESSAGE value="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`." />
+    <option name="LAST_COMMIT_MESSAGE" value="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`." />
   </component>
 </project>
