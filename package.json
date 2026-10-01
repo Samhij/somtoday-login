@@ -1,16 +1,29 @@
 {
-  "name": "somtoday-login",
+  "name": "cyfers",
+  "productName": "Cyfers",
+  "version": "1.0.0",
   "private": true,
+  "description": "Cyfers desktop client for Somtoday",
+  "author": "Cyfers",
+  "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "postinstall": "node scripts/ensure-electron.js",
+    "dev": "npm run build:electron && electron .",
+    "dev:electron": "npm run dev",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build:next": "next build && node scripts/prepare-standalone.js",
+    "build": "npm run build:electron && npm run build:next",
+    "start": "electron .",
+    "pack": "npm run build && electron-builder --publish never",
+    "pack:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
+    "pack:win": "npm run build && electron-builder --win nsis --publish never",
+    "pack:mac": "npm run build && electron-builder --mac dmg --publish never",
+    "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit"
   },
   "dependencies": {
     "jszip": "^3.10.2",
     "lucide-react": "^1.49.0",
-    "next": "^15.5.4",
-    "puppeteer-core": "^25.12.0",
+    "next": "^16.3.8",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -19,6 +32,48 @@
     "@types/node": "^22.18.6",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.0.12",
     "typescript": "^5.9.2"
+  },
+  "build": {
+    "appId": "nl.cyfers.app",
+    "productName": "Cyfers",
+    "directories": {
+      "output": "release",
+      "buildResources": "electron-assets"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "package.json",
+      "!**/node_modules/**"
+    ],
+    "asar": true,
+    "afterPack": "./scripts/after-pack.js",
+    "extraResources": [
+      {
+        "from": "plugins",
+        "to": "plugins"
+      }
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Education",
+      "maintainer": "Cyfers"
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.education"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "allowScripts": {
+    "electron": true
   }
 }

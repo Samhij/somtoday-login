@@ -4,47 +4,37 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/jsonCatalog.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/[id]/entry/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/[id]/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/[id]/ui/[...path]/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/context/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/proxy/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/plugins/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/components/AppShell.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/components/OverviewPage.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/components/PluginFrame.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/plugins.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/auth.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/icons.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/manifest.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/match.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/rate-limit.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/registry.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/plugins/sdk.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/manifest.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/widget-cijfers/manifest.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/app.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" afterDir="false" />
+    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
+      <change afterPath="$PROJECT_DIR$/electron-assets/.gitkeep" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/electron/main.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/electron/preload.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/electron/sso.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/electron/tsconfig.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/plugins/base-styles.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/public/.gitkeep" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/after-pack.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/ensure-electron.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/prepare-standalone.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/api/login/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/login/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/method/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/method/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/schools/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/schools/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/session/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/session/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/plugins/[id]/entry/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/plugins/[id]/entry/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/AppShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/PluginFrame.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/PluginFrame.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/plugins.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/plugins.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/browser-sso.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/browser-sso.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/schools.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/schools.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/somtoday.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/somtoday.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/plugins/registry.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/plugins/registry.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/plugins/sdk.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/plugins/sdk.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/session.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -77,23 +67,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000000000622982" />
-      <entry key="MS500" value="1.0153077768199013" />
-      <entry key="S2" value="1.5905333624220988" />
-      <entry key="S5" value="2.2275948491683004" />
-      <entry key="S10" value="2.566867977580532" />
-      <entry key="S30" value="2.843721082750152" />
-      <entry key="S60" value="2.920491813385218" />
-      <entry key="M2" value="2.980785734778766" />
-      <entry key="M5" value="3.307365046161854" />
-      <entry key="M10" value="3.7963320943540726" />
-      <entry key="M15" value="4.084374450871076" />
-      <entry key="M30" value="4.473630623757472" />
-      <entry key="H1" value="4.716981310391931" />
-      <entry key="H2" value="4.853148883854146" />
-      <entry key="H4" value="4.925187848699435" />
-      <entry key="D1" value="4.987334224471626" />
-      <entry key="W1" value="4.9981857171544295" />
+      <entry key="MS100" value="1.1513102832066464" />
+      <entry key="MS500" value="2.18026738153737" />
+      <entry key="S2" value="2.752005540451889" />
+      <entry key="S5" value="2.8967653012403662" />
+      <entry key="S10" value="2.9476848994638196" />
+      <entry key="S30" value="2.982404192639798" />
+      <entry key="S60" value="2.9911822652892517" />
+      <entry key="M2" value="2.9955861634916126" />
+      <entry key="M5" value="2.998233271795924" />
+      <entry key="M10" value="2.9991610948893332" />
+      <entry key="M15" value="3.001523516375611" />
+      <entry key="M30" value="3.1014488442048376" />
+      <entry key="H1" value="3.711209103232376" />
+      <entry key="H2" value="4.884595653198181" />
+      <entry key="H4" value="6.069187066670723" />
+      <entry key="D1" value="7.609305816270291" />
+      <entry key="W1" value="7.942218855592199" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -115,24 +105,27 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.8705505633149845" />
-      <entry key="MS500" value="0.9848707108421136" />
-      <entry key="S2" value="1.5516368796014601" />
-      <entry key="S5" value="2.1978507645309153" />
-      <entry key="S10" value="2.5481866284735535" />
-      <entry key="S30" value="2.8364538709543634" />
-      <entry key="S60" value="2.9167106235183535" />
-      <entry key="M2" value="2.978691944052322" />
-      <entry key="M5" value="3.30555196732921" />
-      <entry key="M10" value="3.7946550699752577" />
-      <entry key="M15" value="4.082951782141604" />
-      <entry key="M30" value="4.47271294481713" />
-      <entry key="H1" value="4.716457880473494" />
-      <entry key="H2" value="4.852869086997818" />
-      <entry key="H4" value="4.925043165829142" />
-      <entry key="D1" value="4.987309422639562" />
-      <entry key="W1" value="4.998182156871709" />
+      <entry key="MS100" value="1.1122031899938711" />
+      <entry key="MS500" value="2.1639606171852748" />
+      <entry key="S2" value="2.746670041476837" />
+      <entry key="S5" value="2.894501483940397" />
+      <entry key="S10" value="2.946530106395137" />
+      <entry key="S30" value="2.9820140520215124" />
+      <entry key="S60" value="2.9909865358798102" />
+      <entry key="M2" value="2.9954881334139154" />
+      <entry key="M5" value="2.998194019998323" />
+      <entry key="M10" value="2.9991414426287757" />
+      <entry key="M15" value="3.0015096906841348" />
+      <entry key="M30" value="3.1014214278564953" />
+      <entry key="H1" value="3.711126893038539" />
+      <entry key="H2" value="4.884485360481959" />
+      <entry key="H4" value="6.069096086518488" />
+      <entry key="D1" value="7.6092827579464535" />
+      <entry key="W1" value="7.942215315691594" />
     </decayedShown>
+  </component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/package.json" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7,
@@ -164,6 +157,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "npm.Next.js: server-side.executor": "Run",
     "ts.external.directory.path": "/home/sam/Projects/web/somtoday-login/node_modules/typescript/lib"
   }
 }]]></component>
@@ -171,18 +165,6 @@
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/data/plugins" />
     </key>
-  </component>
-  <component name="RunManager">
-    <configuration name="Next.js: server-side" type="js.build_tools.npm">
-      <package-json value="$PROJECT_DIR$/package.json" />
-      <command value="run" />
-      <scripts>
-        <script value="dev" />
-      </scripts>
-      <node-interpreter value="project" />
-      <envs />
-      <method v="2" />
-    </configuration>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -199,11 +181,24 @@
       <option name="presentableId" value="Default" />
       <updated>1790858634027</updated>
       <workItem from="1790858635473" duration="1416000" />
-      <workItem from="1790860505615" duration="1595000" />
+      <workItem from="1790860505615" duration="5983000" />
     </task>
+    <task id="LOCAL-00001" summary="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
+      <option name="closed" value="true" />
+      <created>1790862352398</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1790862352398</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`." />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`." />
   </component>
 </project>

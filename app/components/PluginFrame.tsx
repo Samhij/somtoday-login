@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { applyPluginTheme } from "@/lib/plugins/sdk";
 import type { PluginSessionContext } from "@/lib/somtoday";
 
 type Props = {
@@ -21,6 +22,11 @@ function storageKey(pluginId: string, key: string) {
   return `cyfers:plugin:${pluginId}:${key}`;
 }
 
+function readHostTheme(): "light" | "dark" {
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "dark" ? "dark" : "light";
+}
+
 export function PluginFrame({ pluginId, context, variant = "page" }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [srcdoc, setSrcdoc] = useState("");
@@ -36,7 +42,7 @@ export function PluginFrame({ pluginId, context, variant = "page" }: Props) {
         const response = await fetch(`/api/plugins/${encodeURIComponent(pluginId)}/entry`);
         const payload = (await response.json()) as { html?: string; error?: string };
         if (!response.ok || !payload.html) throw new Error(payload.error || "Plugin laden mislukt.");
-        if (!cancelled) setSrcdoc(payload.html);
+        if (!cancelled) setSrcdoc(applyPluginTheme(payload.html, readHostTheme()));
       } catch (loadError) {
         if (!cancelled) {
           setSrcdoc("");
@@ -49,6 +55,20 @@ export function PluginFrame({ pluginId, context, variant = "page" }: Props) {
       cancelled = true;
     };
   }, [pluginId]);
+
+  useEffect(() => {
+    function pushTheme() {
+      const theme = readHostTheme();
+      iframeRef.current?.contentWindow?.postMessage(
+        { source: "cyfers-host", type: "setTheme", theme },
+        "*",
+      );
+    }
+
+    const observer = new MutationObserver(pushTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, [pluginId, srcdoc]);
 
   useEffect(() => {
     async function onMessage(event: MessageEvent) {
@@ -152,6 +172,12 @@ export function PluginFrame({ pluginId, context, variant = "page" }: Props) {
       title={pluginId}
       sandbox="allow-scripts allow-forms"
       srcDoc={srcdoc}
+      onLoad={() => {
+        iframeRef.current?.contentWindow?.postMessage(
+          { source: "cyfers-host", type: "setTheme", theme: readHostTheme() },
+          "*",
+        );
+      }}
     />
   );
 }

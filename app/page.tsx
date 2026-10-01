@@ -133,15 +133,11 @@ export default function HomePage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ uuid: selected.uuid, username, password }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as { session?: SessionInfo; error?: string };
       if (!response.ok) throw new Error(payload.error || "Inloggen mislukt.");
-      const sessionResponse = await fetch("/api/session");
-      const sessionPayload = (await sessionResponse.json()) as { session?: SessionInfo | null; error?: string };
-      if (!sessionResponse.ok || !sessionPayload.session) {
-        throw new Error(sessionPayload.error || "Gegevens laden mislukt.");
-      }
+      if (!payload.session) throw new Error("Gegevens laden mislukt.");
       setPassword("");
-      setSession(sessionPayload.session);
+      setSession(payload.session);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Inloggen mislukt.");
     } finally {

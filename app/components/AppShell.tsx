@@ -235,6 +235,15 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
             </div>
           ) : null}
 
+          {active === "__overview__" && !context && !error ? (
+            <div className="overview">
+              <header className="overview-head">
+                <h1>Even geduld</h1>
+                <p className="lede">Gegevens laden…</p>
+              </header>
+            </div>
+          ) : null}
+
           {active === "__overview__" && context ? (
             <OverviewPage context={context} widgets={widgets} />
           ) : null}

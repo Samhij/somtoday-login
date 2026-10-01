@@ -14,18 +14,31 @@ type PluginIndex = {
 };
 
 const MAX_ZIP_BYTES = 2 * 1024 * 1024;
-const ROOT = path.join(process.cwd(), "data", "plugins");
-const INDEX_PATH = path.join(ROOT, "index.json");
-const BUILTIN_ROOT = path.join(process.cwd(), "plugins");
+
+function dataRoot() {
+  return process.env.CYFERS_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), "data");
+}
+
+function pluginsRoot() {
+  return path.join(dataRoot(), "plugins");
+}
+
+function indexPath() {
+  return path.join(pluginsRoot(), "index.json");
+}
+
+function builtinRoot() {
+  return process.env.CYFERS_BUILTIN_PLUGINS || path.join(/*turbopackIgnore: true*/ process.cwd(), "plugins");
+}
 
 async function ensureRoot() {
-  await fs.mkdir(ROOT, { recursive: true });
+  await fs.mkdir(pluginsRoot(), { recursive: true });
 }
 
 async function readIndex(): Promise<PluginIndex> {
   await ensureRoot();
   try {
-    const raw = await fs.readFile(INDEX_PATH, "utf8");
+    const raw = await fs.readFile(indexPath(), "utf8");
     const parsed = JSON.parse(raw) as PluginIndex;
     if (!parsed.plugins || !Array.isArray(parsed.plugins)) return { plugins: [] };
     return parsed;
@@ -36,11 +49,11 @@ async function readIndex(): Promise<PluginIndex> {
 
 async function writeIndex(index: PluginIndex) {
   await ensureRoot();
-  await fs.writeFile(INDEX_PATH, JSON.stringify(index, null, 2));
+  await fs.writeFile(indexPath(), JSON.stringify(index, null, 2));
 }
 
 export function pluginDir(id: string) {
-  return path.join(ROOT, id);
+  return path.join(pluginsRoot(), id);
 }
 
 export async function listPlugins(): Promise<InstalledPlugin[]> {
@@ -140,7 +153,7 @@ export async function ensureBuiltinPlugins() {
 
   const builtins = ["widget-cijfers"];
   for (const id of builtins) {
-    const source = path.join(BUILTIN_ROOT, id);
+    const source = path.join(/*turbopackIgnore: true*/ builtinRoot(), id);
     try {
       await fs.access(path.join(source, "manifest.json"));
     } catch {

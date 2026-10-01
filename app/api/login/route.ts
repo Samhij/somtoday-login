@@ -28,8 +28,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Vul je wachtwoord in." }, { status: 400 });
     }
     const tokens = await loginWithPassword(school.uuid, username, password);
-    await writeSession(sessionFromTokens(tokens, school.naam));
-    return NextResponse.json({ ok: true });
+    const stored = sessionFromTokens(tokens, school.naam);
+    await writeSession(stored);
+    return NextResponse.json({
+      ok: true,
+      session: {
+        schoolName: stored.schoolName,
+        tenant: stored.tenant,
+        schoolYear: null,
+        students: [],
+        grades: [],
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Inloggen mislukt.";
     return NextResponse.json({ error: message }, { status: 401 });

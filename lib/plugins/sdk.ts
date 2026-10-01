@@ -1,3 +1,5 @@
+import { CYFERS_PLUGIN_BASE_CSS, CYFERS_PLUGIN_FONT_LINKS } from "./base-styles";
+
 /** Cyfers plugin bridge — injected into sandboxed srcdoc iframes. */
 export const CYFERS_SDK_SOURCE = `
 (function () {
@@ -16,9 +18,19 @@ export const CYFERS_SDK_SOURCE = `
     });
   }
 
+  function applyTheme(theme) {
+    if (theme !== "light" && theme !== "dark") return;
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
   window.addEventListener("message", function (event) {
     var data = event.data;
-    if (!data || data.source !== "cyfers-host" || data.pluginId !== pluginId) return;
+    if (!data || data.source !== "cyfers-host") return;
+    if (data.type === "setTheme") {
+      applyTheme(data.theme);
+      return;
+    }
+    if (data.pluginId !== pluginId) return;
     var entry = pending[data.id];
     if (!entry) return;
     delete pending[data.id];
@@ -64,7 +76,22 @@ export const CYFERS_SDK_SOURCE = `
 })();
 `.trim();
 
-export function rewritePluginHtml(html: string, pluginId: string, entryRelative: string): string {
+function injectIntoHead(html: string, headContent: string): string {
+  if (/<\/head>/i.test(html)) {
+    return html.replace(/<\/head>/i, `${headContent}</head>`);
+  }
+  if (/<body[^>]*>/i.test(html)) {
+    return html.replace(/<body([^>]*)>/i, `<head>${headContent}</head><body$1>`);
+  }
+  return `<!DOCTYPE html><html><head>${headContent}</head><body>${html}</body></html>`;
+}
+
+export function rewritePluginHtml(
+  html: string,
+  pluginId: string,
+  entryRelative: string,
+  options?: { variant?: "page" | "widget" },
+): string {
   const entryDir = entryRelative.includes("/")
     ? entryRelative.slice(0, entryRelative.lastIndexOf("/") + 1)
     : "ui/";
@@ -76,13 +103,28 @@ export function rewritePluginHtml(html: string, pluginId: string, entryRelative:
     return `${attr}="${base}${cleaned}"`;
   });
 
-  const sdkTag = `<script data-plugin-id="${pluginId}">${CYFERS_SDK_SOURCE}</script>`;
-  if (/<\/head>/i.test(out)) {
-    out = out.replace(/<\/head>/i, `${sdkTag}</head>`);
-  } else if (/<body[^>]*>/i.test(out)) {
-    out = out.replace(/<body([^>]*)>/i, `<body$1>${sdkTag}`);
-  } else {
-    out = `<!DOCTYPE html><html><head>${sdkTag}</head><body>${out}</body></html>`;
+  if (options?.variant === "widget") {
+    out = out.replace(/<body\b([^>]*)>/i, (_m, attrs: string) => {
+      if (/\bclass\s*=/.test(attrs)) {
+        return `<body${attrs.replace(/\bclass\s*=\s*(["'])([^"']*)\1/i, (_cm, q, cls) => `class=${q}${cls} cyfers-widget${q}`)}>`;
+      }
+      return `<body class="cyfers-widget"${attrs}>`;
+    });
   }
+
+  const baseStyle = `<style data-cyfers-base>${CYFERS_PLUGIN_BASE_CSS}</style>`;
+  const sdkTag = `<script data-plugin-id="${pluginId}">${CYFERS_SDK_SOURCE}</script>`;
+  out = injectIntoHead(out, `${CYFERS_PLUGIN_FONT_LINKS}${baseStyle}${sdkTag}`);
   return out;
+}
+
+/** Stamp host theme onto plugin HTML before srcdoc assignment. */
+export function applyPluginTheme(html: string, theme: "light" | "dark"): string {
+  if (/<html\b[^>]*\bdata-theme\s*=/.test(html)) {
+    return html.replace(/<html\b([^>]*)\bdata-theme\s*=\s*(["'])[^"']*\2/i, `<html$1data-theme="${theme}"`);
+  }
+  if (/<html\b/i.test(html)) {
+    return html.replace(/<html\b/i, `<html data-theme="${theme}"`);
+  }
+  return `<html data-theme="${theme}">${html}</html>`;
 }

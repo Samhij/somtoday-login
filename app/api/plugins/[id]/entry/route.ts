@@ -16,7 +16,8 @@ export async function GET(_request: Request, { params }: Params) {
 
   try {
     const { html, entry } = await readPluginEntryHtml(id);
-    const rewritten = rewritePluginHtml(html, id, entry);
+    const variant = plugin.kind === "widget" ? "widget" : "page";
+    const rewritten = rewritePluginHtml(html, id, entry, { variant });
     return NextResponse.json({ html: rewritten });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Entry laden mislukt.";
