@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      CYFERS_DESKTOP: "1"
+      CYFERS_DATA_DIR: /app/data
+      CYFERS_BUILTIN_PLUGINS: /app/plugins
+      # Stable key so encrypted sessions survive container restarts.
+      CYFERS_SESSION_KEY: ${CYFERS_SESSION_KEY:-dev-docker-session-key-change-me}
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    volumes:
+      # Live-reload source; keep container node_modules / .next.
+      - .:/app
+      - app_node_modules:/app/node_modules
+      - app_next:/app/.next
+      - app_data:/app/data
+    stdin_open: true
+    tty: true
+
+volumes:
+  app_node_modules:
+  app_next:
+  app_data:

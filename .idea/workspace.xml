@@ -4,11 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/release.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/release.yml" afterDir="false" />
+    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency.">
+      <change afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/plugins/store/install/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/plugins/store/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/compose.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/plugins/store.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/components/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/AppShell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/globals.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,7 +24,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="64" />
+    <option name="cachedIndexableFilesCount" value="73" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FormatOnSaveOptions">
@@ -31,73 +39,73 @@
     &quot;assignee&quot;: &quot;Samhij&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Samhij/somtoday-login.git",
-    "accountId": "f564c27d-5f40-48cf-8b09-a057820f9a3b"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Samhij/somtoday-login.git&quot;,
+    &quot;accountId&quot;: &quot;f564c27d-5f40-48cf-8b09-a057820f9a3b&quot;
   }
-}]]></component>
+}</component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0005380396073618" />
-      <entry key="MS500" value="1.222801312888692" />
-      <entry key="S2" value="2.072272440986587" />
-      <entry key="S5" value="3.1789103531190044" />
-      <entry key="S10" value="3.9159124035649167" />
-      <entry key="S30" value="4.590819683256657" />
-      <entry key="S60" value="4.81310736793778" />
-      <entry key="M2" value="5.920242930202521" />
-      <entry key="M5" value="29.866586321926224" />
-      <entry key="M10" value="100.26627431596239" />
-      <entry key="M15" value="167.94689634267607" />
-      <entry key="M30" value="308.8725617426176" />
-      <entry key="H1" value="438.7039902821211" />
-      <entry key="H2" value="530.4913132358296" />
-      <entry key="H4" value="586.0457966721611" />
-      <entry key="D1" value="638.6691261816926" />
-      <entry key="W1" value="648.3634248649447" />
+      <entry key="MS100" value="1.0210618506545377" />
+      <entry key="MS500" value="1.5649480073633812" />
+      <entry key="S2" value="2.7084803871426253" />
+      <entry key="S5" value="3.942683399244744" />
+      <entry key="S10" value="4.767607021455263" />
+      <entry key="S30" value="5.532116983945428" />
+      <entry key="S60" value="5.78223581872953" />
+      <entry key="M2" value="6.901225996830726" />
+      <entry key="M5" value="30.828174442060124" />
+      <entry key="M10" value="101.20177656619323" />
+      <entry key="M15" value="168.87486575127272" />
+      <entry key="M30" value="309.80631860327645" />
+      <entry key="H1" value="439.65694387610785" />
+      <entry key="H2" value="531.4628676558817" />
+      <entry key="H4" value="587.0300842225655" />
+      <entry key="D1" value="639.6662722612265" />
+      <entry key="W1" value="649.363010972744" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="4.163701281794738E-280" />
-      <entry key="S2" value="1.4284659446598466E-70" />
-      <entry key="S5" value="1.153315120503042E-28" />
-      <entry key="S10" value="1.0742150427407517E-14" />
-      <entry key="S30" value="2.447910372311449E-5" />
-      <entry key="S60" value="0.008739791279264662" />
-      <entry key="M2" value="0.310674909879059" />
-      <entry key="M5" value="4.395838621670373" />
-      <entry key="M10" value="13.74515645523949" />
-      <entry key="M15" value="22.169228709229355" />
-      <entry key="M30" value="39.36750367690812" />
-      <entry key="H1" value="55.06212937553235" />
-      <entry key="H2" value="66.04173941878915" />
-      <entry key="H4" value="72.59518257392682" />
-      <entry key="D1" value="78.70153077105522" />
-      <entry key="W1" value="79.81285578939848" />
+      <entry key="MS500" value="1.9236769846520548E-280" />
+      <entry key="S2" value="1.1776955586933401E-70" />
+      <entry key="S5" value="1.0676115027504215E-28" />
+      <entry key="S10" value="1.0335318363859384E-14" />
+      <entry key="S30" value="2.416609002089759E-5" />
+      <entry key="S60" value="0.008683733752199095" />
+      <entry key="M2" value="0.30967696365774466" />
+      <entry key="M5" value="4.390185065444485" />
+      <entry key="M10" value="13.736314681994838" />
+      <entry key="M15" value="22.159720568920388" />
+      <entry key="M30" value="39.35906062513016" />
+      <entry key="H1" value="55.056224539123434" />
+      <entry key="H2" value="66.03819818157817" />
+      <entry key="H4" value="72.59323622749186" />
+      <entry key="D1" value="78.70117908987919" />
+      <entry key="W1" value="79.81280483970382" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.7173451158896058" />
-      <entry key="MS500" value="1.1418142763300816" />
-      <entry key="S2" value="2.010323275963631" />
-      <entry key="S5" value="3.1223110075223808" />
-      <entry key="S10" value="3.8765810500456315" />
-      <entry key="S30" value="4.574334343598019" />
-      <entry key="S60" value="4.812859231331177" />
-      <entry key="M2" value="6.2221486554513925" />
-      <entry key="M5" value="34.22867182463351" />
-      <entry key="M10" value="113.95371359016468" />
-      <entry key="M15" value="190.05224467923722" />
-      <entry key="M30" value="348.18233844887044" />
-      <entry key="H1" value="493.725625712545" />
-      <entry key="H2" value="596.5087329070192" />
-      <entry key="H4" value="658.6275884724002" />
-      <entry key="D1" value="717.3682303220577" />
-      <entry key="W1" value="728.1759288501155" />
+      <entry key="MS100" value="0.036151015674887134" />
+      <entry key="MS500" value="0.9895423686589268" />
+      <entry key="S2" value="2.481854303623434" />
+      <entry key="S5" value="3.8159793202277403" />
+      <entry key="S10" value="4.691892747172127" />
+      <entry key="S30" value="5.503055466314744" />
+      <entry key="S60" value="5.775575215812205" />
+      <entry key="M2" value="7.198949756115479" />
+      <entry key="M5" value="35.18336368344241" />
+      <entry key="M10" value="114.87976792992393" />
+      <entry key="M15" value="190.9703044560306" />
+      <entry key="M30" value="349.1074501707701" />
+      <entry key="H1" value="494.67257157315265" />
+      <entry key="H2" value="597.4766937727159" />
+      <entry key="H4" value="659.6099032244306" />
+      <entry key="D1" value="718.365020262716" />
+      <entry key="W1" value="729.1754633700801" />
     </decayedShown>
   </component>
   <component name="OptimizeOnSaveOptions">
@@ -119,39 +127,39 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "code.cleanup.on.save": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "javascript.preferred.runtime.type.id": "node",
-    "js.debugger.nextJs.config.created.client": "true",
-    "js.debugger.nextJs.config.created.server": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/home/sam/Projects/web/somtoday-login/data/plugins",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.jshint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.jshint": "",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.Next.js: server-side.executor": "Run",
-    "rearrange.code.on.save": "true",
-    "settings.editor.selected.configurable": "actions.on.save",
-    "to.speed.mode.migration.done": "true",
-    "ts.external.directory.path": "/home/sam/Projects/web/somtoday-login/node_modules/typescript/lib"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;code.cleanup.on.save&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
+    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/sam/Projects/web/somtoday-login/data/plugins&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.jshint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.jshint&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.Next.js: server-side.executor&quot;: &quot;Run&quot;,
+    &quot;rearrange.code.on.save&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;actions.on.save&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/home/sam/Projects/web/somtoday-login/node_modules/typescript/lib&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/data/plugins" />
@@ -177,7 +185,8 @@
       <workItem from="1790858635473" duration="1416000" />
       <workItem from="1790860505615" duration="6736000" />
       <workItem from="1790874727002" duration="5972000" />
-      <workItem from="1790888830181" duration="473000" />
+      <workItem from="1790888830181" duration="1235000" />
+      <workItem from="1790890998653" duration="778000" />
     </task>
     <task id="LOCAL-00001" summary="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
       <option name="closed" value="true" />
@@ -211,7 +220,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790874901160</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency.">
+      <option name="closed" value="true" />
+      <created>1790889338096</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1790889338096</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -222,6 +239,7 @@
     <MESSAGE value="Migrate project to Electron with desktop packaging:&#10;- Add Electron integration and main process scripts.&#10;- Update build pipeline for Electron support (`after-pack.js` and `electron-builder` config).&#10;- Refactor `rewritePluginHtml` to support plugin variants.&#10;- Update `package.json` dependencies and scripts for desktop packaging.&#10;- Document changes and build commands in `AGENTS.md`." />
     <MESSAGE value="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS)." />
     <MESSAGE value="Add RPM and Pacman packaging for Linux builds in GitHub Actions workflow:&#10;- Update `electron-builder` configuration to include `rpm` and `pacman` targets.&#10;- Install required Linux packaging tools in workflow." />
-    <option name="LAST_COMMIT_MESSAGE" value="" />
+    <MESSAGE value="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency." />
+    <option name="LAST_COMMIT_MESSAGE" value="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency." />
   </component>
 </project>

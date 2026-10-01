@@ -1,0 +1,17 @@
+node_modules
+.next
+dist-electron
+release
+build
+data
+.git
+.github
+.idea
+*.log
+.DS_Store
+.env*
+!.env.example
+README.md
+AGENTS.md
+docs
+electron-assets

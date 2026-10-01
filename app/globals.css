@@ -549,7 +549,126 @@ h2 {
 
 .manage {
   padding: 1.5rem 1.5rem 3rem;
+  width: min(760px, 100%);
+}
+
+.manage h2 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.manage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin: 1.25rem 0 0.25rem;
+}
+
+.manage-section {
+  margin-top: 2rem;
+}
+
+.manage-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.store-plugin-main {
+  min-width: 0;
+}
+
+.store-plugin-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.store-perms {
+  word-break: break-word;
+}
+
+.modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(16, 20, 28, 0.48);
+  opacity: 1;
+}
+
+.modal-backdrop:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+html[data-theme="dark"] .modal-backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.modal-panel {
+  position: relative;
+  z-index: 1;
   width: min(720px, 100%);
+  max-height: min(84vh, 840px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 48px rgba(16, 20, 28, 0.18);
+  color: var(--ink);
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-head h2 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.55rem;
+  letter-spacing: -0.03em;
+}
+
+.modal-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem 1rem;
+  flex-shrink: 0;
+}
+
+.modal-body {
+  overflow: auto;
+  padding: 0.35rem 1.25rem 1.25rem;
+}
+
+.modal-body .plugin-list {
+  margin-top: 0.5rem;
+}
+
+.modal-body .error {
+  margin-top: 0.75rem;
 }
 
 .upload-form {
@@ -566,7 +685,7 @@ h2 {
 
 .plugin-list {
   list-style: none;
-  margin: 0;
+  margin: 0.75rem 0 0;
   padding: 0;
   border-top: 1px solid var(--line);
 }
@@ -584,6 +703,11 @@ h2 {
   flex-direction: column;
   align-items: flex-end;
   gap: 0.55rem;
+}
+
+.plugin-actions .primary {
+  padding: 0.55rem 0.95rem;
+  font-size: 0.92rem;
 }
 
 .switch {
