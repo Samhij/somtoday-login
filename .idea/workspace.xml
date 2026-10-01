@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-    </list>
+    <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="Bump version to 1.2.0 and correct package metadata formatting." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -176,7 +173,7 @@
       <workItem from="1790860505615" duration="6736000" />
       <workItem from="1790874727002" duration="5972000" />
       <workItem from="1790888830181" duration="1235000" />
-      <workItem from="1790890998653" duration="1053000" />
+      <workItem from="1790890998653" duration="1352000" />
     </task>
     <task id="LOCAL-00001" summary="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
       <option name="closed" value="true" />
@@ -226,7 +223,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790891911116</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Bump version to 1.2.0 and correct package metadata formatting.">
+      <option name="closed" value="true" />
+      <created>1790892231204</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1790892231204</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -239,6 +244,7 @@
     <MESSAGE value="Add RPM and Pacman packaging for Linux builds in GitHub Actions workflow:&#10;- Update `electron-builder` configuration to include `rpm` and `pacman` targets.&#10;- Install required Linux packaging tools in workflow." />
     <MESSAGE value="Bump version to 1.1.1 and enable universal macOS build:&#10;&#10;- Update `package.json` and `package-lock.json` version to 1.1.1.&#10;- Add `universal` arch support to macOS DMG builds in `electron-builder` configuration.&#10;- Adjust Next.js type imports for consistency." />
     <MESSAGE value="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`." />
-    <option name="LAST_COMMIT_MESSAGE" value="Introduce plugin marketplace with store catalog, installation, and management:&#10;&#10;- Add a plugin marketplace in `AppShell` for discovery and installation of plugins.&#10;- Implement fetching store catalog with new APIs and handlers, including error handling.&#10;- Introduce `store.ts` for catalog processing, version checks, and plugin installation via GitHub repo or direct download.&#10;- Extend UI to display available plugins, their details, and allow installation, updates, or reinstallation.&#10;- Bump app version to `1.2.0`." />
+    <MESSAGE value="Bump version to 1.2.0 and correct package metadata formatting." />
+    <option name="LAST_COMMIT_MESSAGE" value="Bump version to 1.2.0 and correct package metadata formatting." />
   </component>
 </project>
