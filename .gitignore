@@ -5,3 +5,4 @@ release
 build/server
 *.log
 data/
+.DS_Store
