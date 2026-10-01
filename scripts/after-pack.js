@@ -13,7 +13,9 @@ function du(dir) {
 
 exports.default = async function afterPack(context) {
   const src = path.join(context.packager.projectDir, "build", "server");
-  const dest = path.join(context.appOutDir, "resources", "standalone");
+  // On macOS this is …/Cyfers.app/Contents/Resources; on win/linux …/resources.
+  const resourcesDir = context.packager.getResourcesDir(context.appOutDir);
+  const dest = path.join(resourcesDir, "standalone");
   if (!existsSync(src)) {
     throw new Error(`Missing ${src}; run build:next first.`);
   }
@@ -26,14 +28,14 @@ exports.default = async function afterPack(context) {
   cpSync(src, dest, { recursive: true });
 
   const pluginsSrc = path.join(context.packager.projectDir, "plugins");
-  const pluginsDest = path.join(context.appOutDir, "resources", "plugins");
+  const pluginsDest = path.join(resourcesDir, "plugins");
   if (existsSync(pluginsSrc)) {
     rmSync(pluginsDest, { recursive: true, force: true });
     cpSync(pluginsSrc, pluginsDest, { recursive: true });
   }
 
   const standaloneMb = du(dest) / (1024 * 1024);
-  console.log(`afterPack: standalone ${standaloneMb.toFixed(1)} MB`);
+  console.log(`afterPack: standalone ${standaloneMb.toFixed(1)} MB → ${dest}`);
   if (standaloneMb > 150) {
     throw new Error(
       `standalone too large (${standaloneMb.toFixed(1)} MB) — check for nested build artifacts.`,
