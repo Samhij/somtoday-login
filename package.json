@@ -1,7 +1,7 @@
 {
   "name": "cyfers",
   "productName": "Cyfers",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Cyfers desktop client for Somtoday",
   "author": "Cyfers",
@@ -17,7 +17,7 @@
     "pack": "npm run build && electron-builder --publish never",
     "pack:linux": "npm run build && electron-builder --linux AppImage deb rpm pacman --publish never",
     "pack:win": "npm run build && electron-builder --win nsis --publish never",
-    "pack:mac": "npm run build && electron-builder --mac dmg --publish never",
+    "pack:mac": "npm run build && electron-builder --mac dmg --universal --publish never",
     "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -73,7 +73,12 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
       ],
       "category": "public.app-category.education"
     },

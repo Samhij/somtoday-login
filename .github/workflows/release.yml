@@ -84,7 +84,7 @@ jobs:
 
       - name: Pack macOS
         if: matrix.platform == 'mac'
-        run: npx electron-builder --mac dmg --publish never
+        run: npx electron-builder --mac dmg --universal --publish never
 
       - name: Collect artifacts
         shell: bash

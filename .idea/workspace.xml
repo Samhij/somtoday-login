@@ -5,28 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2a32a414-0921-4c54-9d50-e814ec068369" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/plugins/cyfers.d.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/jsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/script.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/script.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/release.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/release.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/plugins/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/plugins/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/components/AppShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/AppShell.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/electron/main.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/plugins/base-styles.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/plugins/base-styles.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/plugins/registry.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/plugins/registry.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/somtoday.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/somtoday.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/types.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next-env.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/voorbeeld-info/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/voorbeeld-info/ui/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/widget-cijfers/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/widget-cijfers/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/widget-cijfers/ui/app.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/widget-cijfers/ui/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/widget-cijfers/ui/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.tsbuildinfo" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,7 +16,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="159" />
+    <option name="cachedIndexableFilesCount" value="64" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="FormatOnSaveOptions">
@@ -49,73 +31,73 @@
     &quot;assignee&quot;: &quot;Samhij&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Samhij/somtoday-login.git&quot;,
-    &quot;accountId&quot;: &quot;f18b5062-6e0b-4aaf-8de7-6c17e8ec427e&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Samhij/somtoday-login.git",
+    "accountId": "f564c27d-5f40-48cf-8b09-a057820f9a3b"
   }
-}</component>
+}]]></component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.7022224378689985" />
-      <entry key="MS500" value="1.931740429304773" />
-      <entry key="S2" value="1.9824800378998837" />
-      <entry key="S5" value="1.9929548331266311" />
-      <entry key="S10" value="1.9964711903144698" />
-      <entry key="S30" value="1.9989190792186797" />
-      <entry key="S60" value="2.0256371812533134" />
-      <entry key="M2" value="3.064499669308372" />
-      <entry key="M5" value="27.26633242420002" />
-      <entry key="M10" value="97.96738494874276" />
-      <entry key="M15" value="165.73507841161788" />
-      <entry key="M30" value="306.60032855873004" />
-      <entry key="H1" value="436.2214859607147" />
-      <entry key="H2" value="527.804344423025" />
-      <entry key="H4" value="583.2187374058199" />
-      <entry key="D1" value="635.7005425061868" />
-      <entry key="W1" value="645.3679811456254" />
+      <entry key="MS100" value="1.0005380396073618" />
+      <entry key="MS500" value="1.222801312888692" />
+      <entry key="S2" value="2.072272440986587" />
+      <entry key="S5" value="3.1789103531190044" />
+      <entry key="S10" value="3.9159124035649167" />
+      <entry key="S30" value="4.590819683256657" />
+      <entry key="S60" value="4.81310736793778" />
+      <entry key="M2" value="5.920242930202521" />
+      <entry key="M5" value="29.866586321926224" />
+      <entry key="M10" value="100.26627431596239" />
+      <entry key="M15" value="167.94689634267607" />
+      <entry key="M30" value="308.8725617426176" />
+      <entry key="H1" value="438.7039902821211" />
+      <entry key="H2" value="530.4913132358296" />
+      <entry key="H4" value="586.0457966721611" />
+      <entry key="D1" value="638.6691261816926" />
+      <entry key="W1" value="648.3634248649447" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="2.0996577574578826E-276" />
-      <entry key="S2" value="1.2037522938344794E-69" />
-      <entry key="S5" value="2.705296561607087E-28" />
-      <entry key="S10" value="1.6452226393086822E-14" />
-      <entry key="S30" value="2.8216728643507315E-5" />
-      <entry key="S60" value="0.009383322339649012" />
-      <entry key="M2" value="0.32190962956037605" />
-      <entry key="M5" value="4.458747258368906" />
-      <entry key="M10" value="13.84316020803703" />
-      <entry key="M15" value="22.274482458843323" />
-      <entry key="M30" value="39.46084636627304" />
-      <entry key="H1" value="55.12736851648101" />
-      <entry key="H2" value="66.08085188085028" />
-      <entry key="H4" value="72.61667622382657" />
-      <entry key="D1" value="78.7054138903041" />
-      <entry key="W1" value="79.81341834204929" />
+      <entry key="MS500" value="4.163701281794738E-280" />
+      <entry key="S2" value="1.4284659446598466E-70" />
+      <entry key="S5" value="1.153315120503042E-28" />
+      <entry key="S10" value="1.0742150427407517E-14" />
+      <entry key="S30" value="2.447910372311449E-5" />
+      <entry key="S60" value="0.008739791279264662" />
+      <entry key="M2" value="0.310674909879059" />
+      <entry key="M5" value="4.395838621670373" />
+      <entry key="M10" value="13.74515645523949" />
+      <entry key="M15" value="22.169228709229355" />
+      <entry key="M30" value="39.36750367690812" />
+      <entry key="H1" value="55.06212937553235" />
+      <entry key="H2" value="66.04173941878915" />
+      <entry key="H4" value="72.59518257392682" />
+      <entry key="D1" value="78.70153077105522" />
+      <entry key="W1" value="79.81285578939848" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.639174252973374" />
-      <entry key="MS500" value="1.9160374037193333" />
-      <entry key="S2" value="1.97838111713845" />
-      <entry key="S5" value="1.991300928899512" />
-      <entry key="S10" value="1.9956418305592438" />
-      <entry key="S30" value="1.9986685762086418" />
-      <entry key="S60" value="2.034630809973599" />
-      <entry key="M2" value="3.3819250662813793" />
-      <entry key="M5" value="31.69267776898124" />
-      <entry key="M10" value="111.7533324846732" />
-      <entry key="M15" value="187.94598766013564" />
-      <entry key="M30" value="346.00361618500403" />
-      <entry key="H1" value="491.308465076097" />
-      <entry key="H2" value="593.8609384068681" />
-      <entry key="H4" value="655.822057016248" />
-      <entry key="D1" value="714.4035359999725" />
-      <entry key="W1" value="725.1810485886612" />
+      <entry key="MS100" value="0.7173451158896058" />
+      <entry key="MS500" value="1.1418142763300816" />
+      <entry key="S2" value="2.010323275963631" />
+      <entry key="S5" value="3.1223110075223808" />
+      <entry key="S10" value="3.8765810500456315" />
+      <entry key="S30" value="4.574334343598019" />
+      <entry key="S60" value="4.812859231331177" />
+      <entry key="M2" value="6.2221486554513925" />
+      <entry key="M5" value="34.22867182463351" />
+      <entry key="M10" value="113.95371359016468" />
+      <entry key="M15" value="190.05224467923722" />
+      <entry key="M30" value="348.18233844887044" />
+      <entry key="H1" value="493.725625712545" />
+      <entry key="H2" value="596.5087329070192" />
+      <entry key="H4" value="658.6275884724002" />
+      <entry key="D1" value="717.3682303220577" />
+      <entry key="W1" value="728.1759288501155" />
     </decayedShown>
   </component>
   <component name="OptimizeOnSaveOptions">
@@ -139,6 +121,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.MCP Project settings loaded": "true",
@@ -148,10 +131,12 @@
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "code.cleanup.on.save": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "main",
     "javascript.preferred.runtime.type.id": "node",
     "js.debugger.nextJs.config.created.client": "true",
     "js.debugger.nextJs.config.created.server": "true",
+    "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "/home/sam/Projects/web/somtoday-login/data/plugins",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.jshint": "true",
@@ -163,6 +148,7 @@
     "npm.Next.js: server-side.executor": "Run",
     "rearrange.code.on.save": "true",
     "settings.editor.selected.configurable": "actions.on.save",
+    "to.speed.mode.migration.done": "true",
     "ts.external.directory.path": "/home/sam/Projects/web/somtoday-login/node_modules/typescript/lib"
   }
 }]]></component>
@@ -177,7 +163,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-WS-262.9437.145" />
+        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-WS-262.10968.77" />
       </set>
     </attachedChunks>
   </component>
@@ -191,6 +177,7 @@
       <workItem from="1790858635473" duration="1416000" />
       <workItem from="1790860505615" duration="6736000" />
       <workItem from="1790874727002" duration="5972000" />
+      <workItem from="1790888830181" duration="473000" />
     </task>
     <task id="LOCAL-00001" summary="Implement core plugin architecture and API routes:  &#10;- Add session handling with `requireStoredSession`.  &#10;- Introduce `rateLimit` utility for API rate limiting.  &#10;- Create plugin entry point API at `api/plugins/[id]/entry/route.ts`.  &#10;- Update dependencies (`jszip`, `lucide-react` added).  &#10;- Document architecture, security, and extensibility in `AGENTS.md`.">
       <option name="closed" value="true" />
@@ -235,6 +222,6 @@
     <MESSAGE value="Migrate project to Electron with desktop packaging:&#10;- Add Electron integration and main process scripts.&#10;- Update build pipeline for Electron support (`after-pack.js` and `electron-builder` config).&#10;- Refactor `rewritePluginHtml` to support plugin variants.&#10;- Update `package.json` dependencies and scripts for desktop packaging.&#10;- Document changes and build commands in `AGENTS.md`." />
     <MESSAGE value="Add GitHub Actions workflow for automated release process:&#10;- Configure versioning, artifact packaging, and GitHub Release publishing.&#10;- Support multi-platform builds (Linux, Windows, macOS)." />
     <MESSAGE value="Add RPM and Pacman packaging for Linux builds in GitHub Actions workflow:&#10;- Update `electron-builder` configuration to include `rpm` and `pacman` targets.&#10;- Install required Linux packaging tools in workflow." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add RPM and Pacman packaging for Linux builds in GitHub Actions workflow:&#10;- Update `electron-builder` configuration to include `rpm` and `pacman` targets.&#10;- Install required Linux packaging tools in workflow." />
+    <option name="LAST_COMMIT_MESSAGE" value="" />
   </component>
 </project>
