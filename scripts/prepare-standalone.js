@@ -67,6 +67,16 @@ for (const name of keepDirs) {
   if (existsSync(from)) copyDir(from, path.join(outDir, name));
 }
 
+// Drop optional native image stacks — unused here and break mac universal merges
+// when the same arch-specific .node lands in both x64 and arm64 slices.
+for (const name of ["sharp", "@img"]) {
+  const target = path.join(outDir, "node_modules", name);
+  if (existsSync(target)) {
+    rmSync(target, { recursive: true, force: true });
+    console.log(`Stripped ${name} from standalone`);
+  }
+}
+
 // Drop anything else Next traced into standalone (app sources, release/, etc.)
 for (const entry of readdirSync(serverDir)) {
   if (keepFiles.includes(entry) || keepDirs.includes(entry)) continue;

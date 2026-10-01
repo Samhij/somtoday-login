@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Desktop app — no Next image optimizer / sharp needed.
+  images: { unoptimized: true },
   // Prevent packing previous build artifacts / Electron sources into standalone.
   outputFileTracingExcludes: {
     "*": [
@@ -15,6 +17,8 @@ const nextConfig: NextConfig = {
       "./.idea/**",
       "./docs/**",
       "./data/**",
+      "./node_modules/sharp/**",
+      "./node_modules/@img/**",
     ],
   },
 };
