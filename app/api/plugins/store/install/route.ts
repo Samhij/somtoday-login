@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { requireStoredSession } from "@/lib/plugins/auth";
-import { isManagedBuiltin } from "@/lib/plugins/registry";
 import { installFromStore } from "@/lib/plugins/store";
 
 export async function POST(request: Request) {
@@ -11,12 +10,6 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { id?: unknown };
     const id = String(body.id ?? "").trim();
     if (!id) return NextResponse.json({ error: "id is verplicht." }, { status: 400 });
-    if (isManagedBuiltin(id)) {
-      return NextResponse.json(
-        { error: "Ingebouwde plugins kun je niet via de marketplace overschrijven." },
-        { status: 400 },
-      );
-    }
 
     const { plugin, store } = await installFromStore(id);
     return NextResponse.json({

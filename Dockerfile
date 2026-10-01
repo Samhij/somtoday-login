@@ -8,7 +8,6 @@ ENV NODE_ENV=development \
     ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     CYFERS_DESKTOP=1 \
     CYFERS_DATA_DIR=/app/data \
-    CYFERS_BUILTIN_PLUGINS=/app/plugins \
     WATCHPACK_POLLING=true \
     CHOKIDAR_USEPOLLING=true
 

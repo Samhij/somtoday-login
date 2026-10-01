@@ -316,7 +316,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
               <section className="manage-section">
                 <h2>Geïnstalleerd</h2>
                 <p className="meta">
-                  Geüploade plugins kun je verwijderen; ingebouwde plugins alleen uitzetten.
+                  Geïnstalleerde plugins kun je uitzetten of verwijderen.
                 </p>
 
                 <form className="upload-form" onSubmit={(event) => void onUpload(event)}>

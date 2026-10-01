@@ -65,6 +65,8 @@ async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Respon
       headers: {
         "user-agent": userAgent(),
         accept: "application/vnd.github+json, application/json, */*",
+        // Avoid Fastly serving a stale gzip variant while identity is fresh.
+        "accept-encoding": "identity",
         ...(init?.headers ?? {}),
       },
       cache: "no-store",
@@ -120,7 +122,10 @@ function parseCatalog(raw: unknown): PluginCatalog {
 }
 
 export async function fetchPluginCatalog(): Promise<PluginCatalog> {
-  const response = await fetchWithTimeout(catalogUrl());
+  // Bust raw.githubusercontent.com CDN (max-age=300); gzip/identity can diverge after push.
+  const url = new URL(catalogUrl());
+  url.searchParams.set("_", String(Math.floor(Date.now() / 60_000)));
+  const response = await fetchWithTimeout(url.toString());
   if (!response.ok) {
     throw new Error(`Catalogus laden mislukt (${response.status}).`);
   }

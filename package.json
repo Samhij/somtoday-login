@@ -50,12 +50,6 @@
     ],
     "asar": true,
     "afterPack": "./scripts/after-pack.js",
-    "extraResources": [
-      {
-        "from": "plugins",
-        "to": "plugins"
-      }
-    ],
     "linux": {
       "target": [
         "AppImage",

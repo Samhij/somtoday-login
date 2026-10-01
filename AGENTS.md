@@ -25,7 +25,7 @@ Sessions are encrypted on disk under the app userData directory.
   - `lib/somtoday.ts` – OAuth, exported `somFetch`, session/plugin context.
   - `lib/browser-sso.ts` – Calls Electron SSO bridge over localhost.
   - `lib/session.ts` – httpOnly cookie + encrypted file-backed token store.
-- `plugins/` – First-party plugin sources (`widget-cijfers`, `voorbeeld-info`).
+- `plugins/` – Local samples + SDK types (`voorbeeld-info`, `cyfers.d.ts`); published plugins live in `cyfer-plugins`.
 - `docs/plugins.md` – Dutch author guide for zip plugins.
 - `next.config.ts`, `tsconfig.json`, `package.json` – tooling/config (electron-builder).
 
@@ -77,16 +77,15 @@ flowchart TB
 2. Student signs in; opaque `som_sid` cookie references tokens stored encrypted under userData.
 3. Shell lists enabled plugins; each tab is an isolated iframe (`sandbox="allow-scripts"`).
 4. Injected SDK calls `cyfers.fetch(path)`; host proxies only allowlisted `/rest/...` paths.
-5. Built-in `widget-cijfers` is synced from packaged `plugins/widget-cijfers` on registry read.
-   Overview is host UI; `kind: "page"` plugins are sidebar tabs, `kind: "widget"` only
-   appear on Overview.
+5. Overview is host UI; plugins come from zip upload or the marketplace (`cyfer-plugins`).
+   `kind: "page"` plugins are sidebar tabs, `kind: "widget"` only appear on Overview.
 
 ## Testing Strategy
 
 > TODO: No automated test suite yet.
 
-Manual: `npm run dev` → login (password and SSO) → Overzicht loads students/grades →
-Plugins upload `voorbeeld-info` zip → quit/relaunch confirms session + plugins persist →
+Manual: `npm run dev` → login (password and SSO) → install Cijfers from Marketplace →
+Overzicht shows grades → quit/relaunch confirms session + plugins persist →
 `npm run pack:linux` smoke-starts the AppImage.
 
 ## Security & Compliance
@@ -113,10 +112,9 @@ Plugins upload `voorbeeld-info` zip → quit/relaunch confirms session + plugins
 | --- | --- |
 | `CYFERS_DESKTOP` | Set by Electron; disables Secure cookies on localhost |
 | `CYFERS_DATA_DIR` | Plugin installs + encrypted sessions (userData) |
-| `CYFERS_BUILTIN_PLUGINS` | Packaged first-party plugin sources |
 | `CYFERS_SESSION_KEY` | AES key material for session file |
 | `CYFERS_SSO_URL` / `CYFERS_SSO_SECRET` | Localhost bridge for SSO capture |
-| `plugins/*/manifest.json` | First-party plugin definitions |
+| `CYFERS_PLUGIN_STORE_URL` | Override marketplace catalog URL |
 | `permissions.api` | Per-plugin Somtoday path globs |
 | `nav.icon` | Lucide icon name rendered by host |
 

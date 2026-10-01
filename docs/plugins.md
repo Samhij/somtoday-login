@@ -196,8 +196,8 @@ Tokens zie je nooit. Alleen paden uit jouw `permissions.api` werken.
 
 ## Voorbeelden
 
-- Ingebouwde widget: `plugins/widget-cijfers`
-- Voorbeeldpagina: `plugins/voorbeeld-info`
+- Widget: [widget-cijfers](https://github.com/Samhij/cyfer-plugins/tree/main/plugins/widget-cijfers) in de marketplace-repo
+- Voorbeeldpagina: `plugins/voorbeeld-info` (lokaal sample) of dezelfde id in cyfer-plugins
 
 ## Beperkingen
 

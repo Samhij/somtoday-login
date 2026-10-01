@@ -5,6 +5,7 @@ import {parseManifest, type PluginManifest} from "./manifest";
 
 export type InstalledPlugin = PluginManifest & {
     enabled: boolean;
+    /** @deprecated No managed builtins remain; kept for index compatibility. */
     builtin?: boolean;
     installedAt: string;
 };
@@ -25,10 +26,6 @@ function pluginsRoot() {
 
 function indexPath() {
     return path.join(pluginsRoot(), "index.json");
-}
-
-function builtinRoot() {
-    return process.env.CYFERS_BUILTIN_PLUGINS || path.join(/*turbopackIgnore: true*/ process.cwd(), "plugins");
 }
 
 async function ensureRoot() {
@@ -56,8 +53,28 @@ export function pluginDir(id: string) {
     return path.join(pluginsRoot(), id);
 }
 
+/** One-shot cleanup: drop legacy host plugins and demote former builtins so they stay installed but removable. */
+async function migrateLegacyPluginIndex(): Promise<void> {
+    const index = await readIndex();
+    let changed = false;
+
+    const withoutLegacy = index.plugins.filter((item) => item.id !== "core-overzicht");
+    if (withoutLegacy.length !== index.plugins.length) {
+        changed = true;
+        await fs.rm(pluginDir("core-overzicht"), {recursive: true, force: true}).catch(() => undefined);
+    }
+
+    const plugins = withoutLegacy.map((plugin) => {
+        if (!plugin.builtin) return plugin;
+        changed = true;
+        return {...plugin, builtin: false};
+    });
+
+    if (changed) await writeIndex({plugins});
+}
+
 export async function listPlugins(): Promise<InstalledPlugin[]> {
-    await ensureBuiltinPlugins();
+    await migrateLegacyPluginIndex();
     const index = await readIndex();
     return [...index.plugins].sort((a, b) => {
         const order = a.nav.order - b.nav.order;
@@ -80,22 +97,17 @@ export async function setPluginEnabled(id: string, enabled: boolean): Promise<In
     return plugin;
 }
 
-const BUILTIN_IDS = ["widget-cijfers"];
-
-export function isManagedBuiltin(id: string): boolean {
-    return BUILTIN_IDS.includes(id);
+/** @deprecated Builtins were removed; always false. */
+export function isManagedBuiltin(_id: string): boolean {
+    return false;
 }
 
 export async function removePlugin(id: string): Promise<void> {
     const index = await readIndex();
     const plugin = index.plugins.find((item) => item.id === id);
     if (!plugin) throw new Error("Plugin niet gevonden.");
-    if (isManagedBuiltin(id)) {
-        throw new Error("Ingebouwde plugins kun je niet verwijderen. Zet ze uit als je ze niet wilt zien.");
-    }
     index.plugins = index.plugins.filter((item) => item.id !== id);
     await writeIndex(index);
-    builtinFingerprints.delete(id);
     await fs.rm(pluginDir(id), {recursive: true, force: true});
 }
 
@@ -105,144 +117,6 @@ function safeJoin(root: string, relative: string) {
         throw new Error("Ongeldig pad in plugin-pakket.");
     }
     return resolved;
-}
-
-async function copyDir(src: string, dest: string) {
-    await fs.mkdir(dest, {recursive: true});
-    const entries = await fs.readdir(src, {withFileTypes: true});
-    for (const entry of entries) {
-        const from = path.join(src, entry.name);
-        const to = path.join(dest, entry.name);
-        if (entry.isDirectory()) await copyDir(from, to);
-        else await fs.copyFile(from, to);
-    }
-}
-
-/** Stable fingerprint of source tree so unchanged builtins are not wiped/reinstalled. */
-async function dirFingerprint(root: string): Promise<string> {
-    const parts: string[] = [];
-
-    async function walk(dir: string, prefix: string) {
-        const entries = await fs.readdir(dir, {withFileTypes: true});
-        entries.sort((a, b) => a.name.localeCompare(b.name));
-        for (const entry of entries) {
-            const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-            const full = path.join(dir, entry.name);
-            if (entry.isDirectory()) {
-                await walk(full, relative);
-            } else if (entry.isFile()) {
-                const stat = await fs.stat(full);
-                parts.push(`${relative}:${stat.size}:${stat.mtimeMs}`);
-            }
-        }
-    }
-
-    await walk(root, "");
-    return parts.join("|");
-}
-
-async function installFromDirectory(
-    sourceDir: string,
-    options: { builtin?: boolean; enabled?: boolean } = {},
-): Promise<InstalledPlugin> {
-    const manifestRaw = JSON.parse(await fs.readFile(path.join(sourceDir, "manifest.json"), "utf8"));
-    const manifest = parseManifest(manifestRaw);
-    const target = pluginDir(manifest.id);
-    // Stage then swap so concurrent readers don't see a half-deleted tree.
-    const staging = `${target}.staging-${process.pid}-${Date.now()}`;
-    try {
-        await copyDir(sourceDir, staging);
-        const entryPath = safeJoin(staging, manifest.entry);
-        await fs.access(entryPath);
-        await fs.rm(target, {recursive: true, force: true});
-        await fs.rename(staging, target);
-    } catch (error) {
-        await fs.rm(staging, {recursive: true, force: true}).catch(() => undefined);
-        throw error;
-    }
-
-    const installed: InstalledPlugin = {
-        ...manifest,
-        enabled: options.enabled ?? true,
-        builtin: options.builtin ?? false,
-        installedAt: new Date().toISOString(),
-    };
-
-    const index = await readIndex();
-    const existing = index.plugins.findIndex((item) => item.id === manifest.id);
-    if (existing >= 0) {
-        installed.enabled = index.plugins[existing].enabled;
-        installed.builtin = options.builtin ?? index.plugins[existing].builtin;
-        index.plugins[existing] = installed;
-    } else {
-        index.plugins.push(installed);
-    }
-    await writeIndex(index);
-    return installed;
-}
-
-/** In-memory fingerprints of last-synced builtin sources (per process). */
-const builtinFingerprints = new Map<string, string>();
-
-/** Serialize builtin sync — parallel widget loads used to race on rm/copy. */
-let builtinSyncChain: Promise<void> = Promise.resolve();
-
-async function pruneOrphanBuiltins(index: PluginIndex): Promise<PluginIndex> {
-    const orphans = index.plugins.filter(
-        (plugin) => plugin.builtin && !isManagedBuiltin(plugin.id),
-    );
-    if (orphans.length === 0) return index;
-
-    const keep = index.plugins.filter((plugin) => !orphans.some((orphan) => orphan.id === plugin.id));
-    await writeIndex({plugins: keep});
-    for (const orphan of orphans) {
-        builtinFingerprints.delete(orphan.id);
-        await fs.rm(pluginDir(orphan.id), {recursive: true, force: true});
-    }
-    return {plugins: keep};
-}
-
-async function syncBuiltinPlugins(): Promise<void> {
-    let index = await readIndex();
-    const legacy = index.plugins.find((item) => item.id === "core-overzicht");
-    if (legacy) {
-        index.plugins = index.plugins.filter((item) => item.id !== "core-overzicht");
-        await writeIndex(index);
-        await fs.rm(pluginDir("core-overzicht"), {recursive: true, force: true});
-    }
-
-    index = await pruneOrphanBuiltins(index);
-
-    for (const id of BUILTIN_IDS) {
-        const source = path.join(/*turbopackIgnore: true*/ builtinRoot(), id);
-        try {
-            await fs.access(path.join(source, "manifest.json"));
-        } catch {
-            continue;
-        }
-
-        const fingerprint = await dirFingerprint(source);
-        if (builtinFingerprints.get(id) === fingerprint) {
-            try {
-                await fs.access(path.join(pluginDir(id), "manifest.json"));
-                continue;
-            } catch {
-                // Install copy missing — fall through and reinstall.
-            }
-        }
-
-        await installFromDirectory(source, {builtin: true, enabled: true});
-        builtinFingerprints.set(id, fingerprint);
-    }
-}
-
-export async function ensureBuiltinPlugins(): Promise<void> {
-    const run = builtinSyncChain.then(() => syncBuiltinPlugins());
-    builtinSyncChain = run.then(
-        () => undefined,
-        () => undefined,
-    );
-    return run;
 }
 
 export async function installPluginZip(buffer: Buffer): Promise<InstalledPlugin> {
@@ -296,9 +170,6 @@ export async function installPluginZip(buffer: Buffer): Promise<InstalledPlugin>
     const index = await readIndex();
     const existing = index.plugins.findIndex((item) => item.id === manifest.id);
     if (existing >= 0) {
-        if (index.plugins[existing].builtin) {
-            throw new Error("Kan een ingebouwde plugin niet overschrijven.");
-        }
         installed.enabled = index.plugins[existing].enabled;
         index.plugins[existing] = installed;
     } else {

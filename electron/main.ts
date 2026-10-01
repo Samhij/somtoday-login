@@ -154,11 +154,6 @@ function standaloneDir() {
   return path.join(process.resourcesPath, "standalone");
 }
 
-function builtinPluginsDir() {
-  if (isDev) return path.join(app.getAppPath(), "plugins");
-  return path.join(process.resourcesPath, "plugins");
-}
-
 function resolveStandaloneServer(): { root: string; serverJs: string } {
   const root = standaloneDir();
   const candidates = [
@@ -270,7 +265,6 @@ async function boot() {
   const env: NodeJS.ProcessEnv = {
     CYFERS_DESKTOP: "1",
     CYFERS_DATA_DIR: dataDir,
-    CYFERS_BUILTIN_PLUGINS: builtinPluginsDir(),
     CYFERS_SESSION_KEY: sessionKey,
     CYFERS_SSO_URL: `http://127.0.0.1:${ssoPort}`,
     CYFERS_SSO_SECRET: ssoSecret,

@@ -8,7 +8,6 @@ services:
     environment:
       CYFERS_DESKTOP: "1"
       CYFERS_DATA_DIR: /app/data
-      CYFERS_BUILTIN_PLUGINS: /app/plugins
       # Stable key so encrypted sessions survive container restarts.
       CYFERS_SESSION_KEY: ${CYFERS_SESSION_KEY:-dev-docker-session-key-change-me}
       WATCHPACK_POLLING: "true"
