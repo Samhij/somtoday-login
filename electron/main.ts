@@ -19,6 +19,18 @@ import { captureAuthorizationCode } from "./sso";
 
 const isDev = !app.isPackaged;
 
+/** In-app updates: packaged win/mac always; Linux only when running as AppImage. */
+function updatesSupported(): boolean {
+  if (isDev) return false;
+  if (process.platform === "linux") {
+    return Boolean(process.env.APPIMAGE);
+  }
+  return true;
+}
+
+const UPDATES_UNSUPPORTED_REASON =
+  "In-app updates zijn alleen beschikbaar voor de AppImage. Installeer updates handmatig via je pakketbeheerder.";
+
 let mainWindow: BrowserWindow | null = null;
 let nextProcess: ChildProcess | null = null;
 let controlServer: http.Server | null = null;
@@ -236,6 +248,9 @@ function setupAutoUpdater() {
 
   ipcMain.handle("cyfers:check-for-updates", async () => {
     if (isDev) return { ok: false, error: "Updates alleen in de verpakte app." };
+    if (!updatesSupported()) {
+      return { ok: false, error: UPDATES_UNSUPPORTED_REASON };
+    }
     try {
       await autoUpdater.checkForUpdates();
       return { ok: true };
@@ -248,6 +263,9 @@ function setupAutoUpdater() {
 
   ipcMain.handle("cyfers:install-update", () => {
     if (isDev) return { ok: false, error: "Updates alleen in de verpakte app." };
+    if (!updatesSupported()) {
+      return { ok: false, error: UPDATES_UNSUPPORTED_REASON };
+    }
     if (!updateDownloaded) {
       return { ok: false, error: "Update is nog niet gedownload." };
     }
@@ -258,7 +276,7 @@ function setupAutoUpdater() {
     return { ok: true };
   });
 
-  if (isDev) return;
+  if (!updatesSupported()) return;
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = false;
@@ -312,7 +330,7 @@ function createMainWindow(port: number) {
   mainWindow.setMenuBarVisibility(isDev);
   mainWindow.once("ready-to-show", () => {
     mainWindow?.show();
-    if (!isDev) {
+    if (updatesSupported()) {
       // Delay slightly so the UI can subscribe to update events first.
       setTimeout(() => {
         void autoUpdater.checkForUpdates().catch(() => {

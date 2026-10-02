@@ -100,12 +100,16 @@ catalog versions are newer.
 - Packaged Electron only — `npm run dev` has no update checks.
 - Feed: GitHub Releases for `samhij/somtoday-login` (`latest*.yml` + installers / mac zip /
   blockmaps uploaded by `.github/workflows/release.yml`).
-- Linux in-app channel = **AppImage**; `.deb` remains manual.
-- Flow: check → download in background → sticky Dutch banner → user clicks **Installeren**
-  (`quitAndInstall`). **Later** dismisses; updates never install silently on quit
-  (`autoInstallOnAppQuit: false`).
+- **Linux in-app channel = AppImage only** (`process.env.APPIMAGE`). `.deb`, AUR, and other
+  package installs must **not** run `checkForUpdates` or show the Installeren banner —
+  users update those manually via their package manager. Windows NSIS and mac zip keep
+  in-app updates when packaged.
+- Flow (supported builds): check → download in background → sticky Dutch banner → user
+  clicks **Installeren** (`quitAndInstall`). **Later** dismisses; updates never install
+  silently on quit (`autoInstallOnAppQuit: false`).
 - Preload bridge: `window.cyfersDesktop` (`getVersion`, `checkForUpdates`, `installUpdate`,
-  `onUpdateEvent`). Absent outside Electron — UI no-ops safely.
+  `onUpdateEvent`). Absent outside Electron — UI no-ops safely. On unsupported Linux
+  packages, `checkForUpdates` returns `ok: false` with a Dutch reason and emits no events.
 
 ### Plugin updates
 
