@@ -2,16 +2,19 @@ import {
   app,
   BrowserWindow,
   dialog,
+  ipcMain,
   Menu,
   safeStorage,
   shell,
 } from "electron";
+import { autoUpdater } from "electron-updater";
 import { spawn, type ChildProcess } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import type { CyfersUpdateEvent } from "./preload";
 import { captureAuthorizationCode } from "./sso";
 
 const isDev = !app.isPackaged;
@@ -21,6 +24,7 @@ let nextProcess: ChildProcess | null = null;
 let controlServer: http.Server | null = null;
 let appPort = 0;
 let isQuitting = false;
+let updateDownloaded = false;
 
 function userDataPath(...parts: string[]) {
   return path.join(app.getPath("userData"), ...parts);
@@ -222,6 +226,72 @@ function installDevMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+function sendUpdateEvent(payload: CyfersUpdateEvent) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send("cyfers:update-event", payload);
+}
+
+function setupAutoUpdater() {
+  ipcMain.handle("cyfers:get-version", () => app.getVersion());
+
+  ipcMain.handle("cyfers:check-for-updates", async () => {
+    if (isDev) return { ok: false, error: "Updates alleen in de verpakte app." };
+    try {
+      await autoUpdater.checkForUpdates();
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Updatecontrole mislukt.";
+      sendUpdateEvent({ type: "error", message });
+      return { ok: false, error: message };
+    }
+  });
+
+  ipcMain.handle("cyfers:install-update", () => {
+    if (isDev) return { ok: false, error: "Updates alleen in de verpakte app." };
+    if (!updateDownloaded) {
+      return { ok: false, error: "Update is nog niet gedownload." };
+    }
+    // User-initiated only — never auto-install on quit.
+    setImmediate(() => {
+      autoUpdater.quitAndInstall(false, true);
+    });
+    return { ok: true };
+  });
+
+  if (isDev) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on("checking-for-update", () => {
+    sendUpdateEvent({ type: "checking" });
+  });
+
+  autoUpdater.on("update-available", (info) => {
+    sendUpdateEvent({ type: "available", version: info.version });
+  });
+
+  autoUpdater.on("update-not-available", (info) => {
+    sendUpdateEvent({ type: "not-available", version: info.version });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    updateDownloaded = true;
+    sendUpdateEvent({ type: "downloaded", version: info.version });
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    sendUpdateEvent({ type: "progress", percent: progress.percent });
+  });
+
+  autoUpdater.on("error", (error) => {
+    sendUpdateEvent({
+      type: "error",
+      message: error instanceof Error ? error.message : "Update mislukt.",
+    });
+  });
+}
+
 function createMainWindow(port: number) {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -240,7 +310,17 @@ function createMainWindow(port: number) {
   });
 
   mainWindow.setMenuBarVisibility(isDev);
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => {
+    mainWindow?.show();
+    if (!isDev) {
+      // Delay slightly so the UI can subscribe to update events first.
+      setTimeout(() => {
+        void autoUpdater.checkForUpdates().catch(() => {
+          // Errors are forwarded via the autoUpdater "error" event.
+        });
+      }, 2500);
+    }
+  });
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
@@ -300,6 +380,7 @@ if (!gotLock) {
   app.whenReady().then(async () => {
     if (isDev) installDevMenu();
     else Menu.setApplicationMenu(null);
+    setupAutoUpdater();
     try {
       await boot();
     } catch (error) {

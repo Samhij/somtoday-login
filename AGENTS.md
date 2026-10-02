@@ -12,7 +12,8 @@ Sessions are encrypted on disk under the app userData directory.
 ## Repository Structure
 
 - `electron/` – Electron main process, preload, SSO BrowserWindow capture.
-  - `electron/main.ts` – lifecycle, Next spawn, localhost SSO control bridge.
+  - `electron/main.ts` – lifecycle, Next spawn, localhost SSO control bridge, autoUpdater.
+  - `electron/preload.ts` – `cyfersDesktop` update bridge (contextIsolation).
   - `electron/sso.ts` – school IdP login window + OAuth code capture.
 - `app/` – Next.js App Router UI and API route handlers.
   - `app/page.tsx` – Login flow; post-login mounts `AppShell`.
@@ -37,12 +38,12 @@ npm run dev          # Electron + Next.js (local)
 npm run build        # Compile electron + next standalone
 npm run pack:linux   # AppImage + deb
 npm run pack:win     # NSIS installer
-npm run pack:mac     # DMG
+npm run pack:mac     # DMG + zip (updater)
 npm run typecheck
 ```
 
 Unsigned builds may trigger Gatekeeper (macOS) or SmartScreen (Windows); code signing is a
-follow-up.
+follow-up. In-app updates use `electron-updater` against GitHub Releases (see Updates below).
 
 ## Code Style & Conventions
 
@@ -87,6 +88,38 @@ flowchart TB
 Manual: `npm run dev` → login (password and SSO) → install Cijfers from Marketplace →
 Overzicht shows grades → quit/relaunch confirms session + plugins persist →
 `npm run pack:linux` smoke-starts the AppImage.
+
+Packaged builds: confirm desktop update banner after a newer GitHub Release (AppImage /
+NSIS / mac zip), and Plugins screen shows **Bijwerken** / badge / **Alles bijwerken** when
+catalog versions are newer.
+
+## Updates (app + plugins)
+
+### Desktop app (`electron-updater`)
+
+- Packaged Electron only — `npm run dev` has no update checks.
+- Feed: GitHub Releases for `samhij/somtoday-login` (`latest*.yml` + installers / mac zip /
+  blockmaps uploaded by `.github/workflows/release.yml`).
+- Linux in-app channel = **AppImage**; `.deb` remains manual.
+- Flow: check → download in background → sticky Dutch banner → user clicks **Installeren**
+  (`quitAndInstall`). **Later** dismisses; updates never install silently on quit
+  (`autoInstallOnAppQuit: false`).
+- Preload bridge: `window.cyfersDesktop` (`getVersion`, `checkForUpdates`, `installUpdate`,
+  `onUpdateEvent`). Absent outside Electron — UI no-ops safely.
+
+### Plugin updates
+
+- Catalog annotate (`annotateCatalog` / `isVersionNewer`) runs when the Plugins view opens,
+  not only inside Marketplace.
+- Plugins screen: per-row **Bijwerken**, sidebar count badge, **Alles bijwerken** when more
+  than one update — all via existing `POST /api/plugins/store/install` (enabled preserved).
+- Zip-only / unlisted plugins have no store update path.
+
+### Signing follow-up
+
+v1 ships the updater **unsigned**. Gatekeeper (macOS) and SmartScreen (Windows) may still
+warn; AppImage is the most reliable unsigned channel. Code signing / notarization secrets
+are intentionally out of scope for this change set.
 
 ## Security & Compliance
 
