@@ -1,7 +1,7 @@
 {
   "name": "cyfers",
   "productName": "Cyfers",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "private": true,
   "description": "Cyfers desktop client for Somtoday",
   "author": "Cyfers",
@@ -17,10 +17,11 @@
     "pack": "npm run build && electron-builder --publish never",
     "pack:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
     "pack:win": "npm run build && electron-builder --win nsis --publish never",
-    "pack:mac": "npm run build && electron-builder --mac dmg --universal --publish never",
+    "pack:mac": "npm run build && electron-builder --mac dmg zip --universal --publish never",
     "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "jszip": "^3.10.2",
     "lucide-react": "^1.49.0",
     "next": "^16.3.8",
@@ -46,10 +47,39 @@
     "files": [
       "dist-electron/**/*",
       "package.json",
-      "!**/node_modules/**"
+      "!**/node_modules/**",
+      {
+        "from": "node_modules",
+        "to": "node_modules",
+        "filter": [
+          "electron-updater/**/*",
+          "builder-util-runtime/**/*",
+          "fs-extra/**/*",
+          "jsonfile/**/*",
+          "universalify/**/*",
+          "graceful-fs/**/*",
+          "js-yaml/**/*",
+          "argparse/**/*",
+          "lazy-val/**/*",
+          "lodash.escaperegexp/**/*",
+          "lodash.isequal/**/*",
+          "semver/**/*",
+          "tiny-typed-emitter/**/*",
+          "debug/**/*",
+          "ms/**/*",
+          "sax/**/*"
+        ]
+      }
     ],
     "asar": true,
     "afterPack": "./scripts/after-pack.js",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "samhij",
+        "repo": "somtoday-login"
+      }
+    ],
     "linux": {
       "target": [
         "AppImage",
@@ -67,6 +97,12 @@
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "universal"
           ]

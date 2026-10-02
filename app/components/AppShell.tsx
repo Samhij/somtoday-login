@@ -38,6 +38,11 @@ type StoreListing = {
   updateAvailable: boolean;
 };
 
+type DesktopUpdateState = {
+  version: string;
+  ready: boolean;
+};
+
 type Props = {
   schoolName: string;
   onSignOut: () => void;
@@ -51,11 +56,15 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   const [storeLoading, setStoreLoading] = useState(false);
   const [storeError, setStoreError] = useState<string | null>(null);
   const [installingId, setInstallingId] = useState<string | null>(null);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
   const [active, setActive] = useState<string>("__overview__");
   const [context, setContext] = useState<PluginSessionContext | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [desktopUpdate, setDesktopUpdate] = useState<DesktopUpdateState | null>(null);
+  const [desktopUpdateDismissed, setDesktopUpdateDismissed] = useState(false);
 
   const loadPlugins = useCallback(async () => {
     const response = await fetch("/api/plugins");
@@ -115,8 +124,39 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   }, []);
 
   useEffect(() => {
+    const bridge = window.cyfersDesktop;
+    if (!bridge) return;
+
+    void bridge.getVersion().then((version) => {
+      setAppVersion(version);
+    });
+
+    const unsubscribe = bridge.onUpdateEvent((event) => {
+      if (event.type === "available") {
+        setDesktopUpdate((prev) => ({
+          version: event.version,
+          ready: prev?.version === event.version ? prev.ready : false,
+        }));
+        setDesktopUpdateDismissed(false);
+      } else if (event.type === "downloaded") {
+        setDesktopUpdate({ version: event.version, ready: true });
+        setDesktopUpdateDismissed(false);
+      }
+    });
+
+    void bridge.checkForUpdates();
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     if (active !== "__manage__") setStoreOpen(false);
   }, [active]);
+
+  // Annotate catalog whenever the Plugins screen is shown (not only Marketplace).
+  useEffect(() => {
+    if (active !== "__manage__") return;
+    void loadStore();
+  }, [active, loadStore]);
 
   useEffect(() => {
     if (!storeOpen) return;
@@ -126,7 +166,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   useEffect(() => {
     if (!storeOpen) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !installingId) setStoreOpen(false);
+      if (event.key === "Escape" && !installingId && !bulkUpdating) setStoreOpen(false);
     }
     window.addEventListener("keydown", onKeyDown);
     const previousOverflow = document.body.style.overflow;
@@ -135,7 +175,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [storeOpen, installingId]);
+  }, [storeOpen, installingId, bulkUpdating]);
 
   const pages = useMemo(
     () => plugins.filter((plugin) => plugin.enabled && (plugin.kind ?? "page") === "page"),
@@ -145,6 +185,18 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     () => plugins.filter((plugin) => plugin.enabled && plugin.kind === "widget"),
     [plugins],
   );
+
+  const storeById = useMemo(
+    () => new Map(storePlugins.map((entry) => [entry.id, entry])),
+    [storePlugins],
+  );
+
+  const outdatedStorePlugins = useMemo(
+    () => storePlugins.filter((entry) => entry.updateAvailable),
+    [storePlugins],
+  );
+
+  const pluginUpdateCount = outdatedStorePlugins.length;
 
   async function togglePlugin(id: string, enabledNext: boolean) {
     setError(null);
@@ -214,24 +266,62 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     );
   }
 
+  async function postStoreInstall(id: string) {
+    const response = await fetch("/api/plugins/store/install", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const payload = (await response.json()) as { plugin?: PluginSummary; error?: string };
+    if (!response.ok) throw new Error(payload.error || "Installeren mislukt.");
+  }
+
   async function installFromStore(entry: StoreListing) {
     if (!confirmStoreInstall(entry)) return;
     setInstallingId(entry.id);
     setStoreError(null);
+    setError(null);
     try {
-      const response = await fetch("/api/plugins/store/install", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: entry.id }),
-      });
-      const payload = (await response.json()) as { plugin?: PluginSummary; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Installeren mislukt.");
+      await postStoreInstall(entry.id);
       await loadPlugins();
       await loadStore();
     } catch (installError) {
-      setStoreError(installError instanceof Error ? installError.message : "Installeren mislukt.");
+      const message = installError instanceof Error ? installError.message : "Installeren mislukt.";
+      if (storeOpen) setStoreError(message);
+      else setError(message);
     } finally {
       setInstallingId(null);
+    }
+  }
+
+  async function updateAllPlugins() {
+    const outdated = storePlugins.filter((entry) => entry.updateAvailable);
+    if (outdated.length < 2) return;
+    const names = outdated.map((entry) => `• ${entry.name} (v${entry.version})`).join("\n");
+    if (
+      !window.confirm(
+        `Alle ${outdated.length} plugin-updates installeren?\n\n${names}\n\nBestanden en API-rechten worden vervangen; aan/uit blijft behouden.`,
+      )
+    ) {
+      return;
+    }
+    setBulkUpdating(true);
+    setError(null);
+    setStoreError(null);
+    try {
+      for (const entry of outdated) {
+        setInstallingId(entry.id);
+        await postStoreInstall(entry.id);
+      }
+      await loadPlugins();
+      await loadStore();
+    } catch (bulkError) {
+      setError(bulkError instanceof Error ? bulkError.message : "Bijwerken mislukt.");
+      await loadPlugins();
+      await loadStore();
+    } finally {
+      setInstallingId(null);
+      setBulkUpdating(false);
     }
   }
 
@@ -241,12 +331,47 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   }
 
   function closeStore() {
-    if (installingId) return;
+    if (installingId || bulkUpdating) return;
     setStoreOpen(false);
   }
 
+  async function installDesktopUpdate() {
+    const bridge = window.cyfersDesktop;
+    if (!bridge || !desktopUpdate?.ready) return;
+    const result = await bridge.installUpdate();
+    if (!result.ok && result.error) setError(result.error);
+  }
+
+  const showDesktopBanner = Boolean(desktopUpdate) && !desktopUpdateDismissed;
+  const installBusy = Boolean(installingId) || bulkUpdating;
+
   return (
     <div className="app-shell fade-in">
+      {showDesktopBanner && desktopUpdate ? (
+        <div className="update-banner" role="status">
+          <p className="update-banner-text">
+            Nieuwe versie beschikbaar (v{desktopUpdate.version})
+          </p>
+          <div className="update-banner-actions">
+            <button
+              className="primary"
+              type="button"
+              disabled={!desktopUpdate.ready}
+              onClick={() => void installDesktopUpdate()}
+            >
+              {desktopUpdate.ready ? "Installeren" : "Downloaden…"}
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => setDesktopUpdateDismissed(true)}
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <header className="app-top">
         <div>
           <p className="brand brand-sm">Cyfers</p>
@@ -292,6 +417,11 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
             >
               <Settings2 size={18} strokeWidth={2} aria-hidden />
               <span>Plugins</span>
+              {pluginUpdateCount > 0 ? (
+                <span className="nav-badge" aria-label={`${pluginUpdateCount} updates beschikbaar`}>
+                  {pluginUpdateCount}
+                </span>
+              ) : null}
             </button>
           </nav>
         </aside>
@@ -306,6 +436,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                 Beheer je geïnstalleerde plugins of open de marketplace. Pagina-plugins komen in de
                 zijbalk; widgets alleen op Overzicht.
               </p>
+              {appVersion ? <p className="meta app-version">Cyfers v{appVersion}</p> : null}
 
               <div className="manage-toolbar">
                 <button className="primary" type="button" onClick={openStore}>
@@ -314,10 +445,26 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
               </div>
 
               <section className="manage-section">
-                <h2>Geïnstalleerd</h2>
+                <div className="manage-section-head">
+                  <h2>Geïnstalleerd</h2>
+                  {pluginUpdateCount > 1 ? (
+                    <button
+                      className="primary"
+                      type="button"
+                      disabled={installBusy}
+                      onClick={() => void updateAllPlugins()}
+                    >
+                      {bulkUpdating ? "Bezig…" : "Alles bijwerken"}
+                    </button>
+                  ) : null}
+                </div>
                 <p className="meta">
                   Geïnstalleerde plugins kun je uitzetten of verwijderen.
+                  {pluginUpdateCount > 0
+                    ? ` ${pluginUpdateCount} update${pluginUpdateCount === 1 ? "" : "s"} beschikbaar.`
+                    : ""}
                 </p>
+                {storeError && !storeOpen ? <p className="error">{storeError}</p> : null}
 
                 <form className="upload-form" onSubmit={(event) => void onUpload(event)}>
                   <label htmlFor="plugin-file">Eigen plugin-zip</label>
@@ -328,39 +475,55 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                 </form>
 
                 <ul className="plugin-list">
-                  {plugins.map((plugin) => (
-                    <li key={plugin.id} className="plugin-row">
-                      <div>
-                        <strong>{plugin.name}</strong>
-                        <p className="meta">
-                          {(plugin.kind ?? "page") === "widget" ? "Widget" : "Pagina"} · {plugin.nav.label} · v
-                          {plugin.version}
-                          {plugin.builtin ? " · ingebouwd" : ""}
-                          {plugin.author ? ` · ${plugin.author}` : ""}
-                        </p>
-                        {plugin.description ? <p className="meta">{plugin.description}</p> : null}
-                      </div>
-                      <div className="plugin-actions">
-                        <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={plugin.enabled}
-                            onChange={(event) => void togglePlugin(plugin.id, event.target.checked)}
-                          />
-                          <span>{plugin.enabled ? "Aan" : "Uit"}</span>
-                        </label>
-                        {plugin.removable ? (
-                          <button
-                            className="ghost"
-                            type="button"
-                            onClick={() => void remove(plugin.id, plugin.name)}
-                          >
-                            Verwijderen
-                          </button>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
+                  {plugins.map((plugin) => {
+                    const listing = storeById.get(plugin.id);
+                    const updateAvailable = Boolean(listing?.updateAvailable);
+                    const busy = installingId === plugin.id;
+                    return (
+                      <li key={plugin.id} className="plugin-row">
+                        <div>
+                          <strong>{plugin.name}</strong>
+                          <p className="meta">
+                            {(plugin.kind ?? "page") === "widget" ? "Widget" : "Pagina"} · {plugin.nav.label} · v
+                            {plugin.version}
+                            {updateAvailable && listing ? ` · update v${listing.version}` : ""}
+                            {plugin.builtin ? " · ingebouwd" : ""}
+                            {plugin.author ? ` · ${plugin.author}` : ""}
+                          </p>
+                          {plugin.description ? <p className="meta">{plugin.description}</p> : null}
+                        </div>
+                        <div className="plugin-actions">
+                          {updateAvailable && listing ? (
+                            <button
+                              className="primary"
+                              type="button"
+                              disabled={installBusy}
+                              onClick={() => void installFromStore(listing)}
+                            >
+                              {busy ? "Bezig…" : "Bijwerken"}
+                            </button>
+                          ) : null}
+                          <label className="switch">
+                            <input
+                              type="checkbox"
+                              checked={plugin.enabled}
+                              onChange={(event) => void togglePlugin(plugin.id, event.target.checked)}
+                            />
+                            <span>{plugin.enabled ? "Aan" : "Uit"}</span>
+                          </label>
+                          {plugin.removable ? (
+                            <button
+                              className="ghost"
+                              type="button"
+                              onClick={() => void remove(plugin.id, plugin.name)}
+                            >
+                              Verwijderen
+                            </button>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             </div>
@@ -422,7 +585,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                   className="ghost"
                   type="button"
                   onClick={() => void loadStore()}
-                  disabled={storeLoading || Boolean(installingId)}
+                  disabled={storeLoading || installBusy}
                 >
                   {storeLoading ? "Laden…" : "Vernieuwen"}
                 </button>
@@ -430,7 +593,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                   className="ghost"
                   type="button"
                   onClick={closeStore}
-                  disabled={Boolean(installingId)}
+                  disabled={installBusy}
                 >
                   Sluiten
                 </button>
@@ -477,7 +640,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                         <button
                           className="primary"
                           type="button"
-                          disabled={busy || Boolean(installingId)}
+                          disabled={busy || installBusy}
                           onClick={() => void installFromStore(entry)}
                         >
                           {busy ? "Bezig…" : actionLabel}

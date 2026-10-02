@@ -100,20 +100,24 @@ jobs:
 
       - name: Pack macOS
         if: matrix.platform == 'mac'
-        run: npx electron-builder --mac dmg --universal --publish never
+        run: npx electron-builder --mac dmg zip --universal --publish never
 
       - name: Collect artifacts
         shell: bash
         run: |
           mkdir -p dist-artifacts
           shopt -s nullglob
+          # Installers + electron-updater feed (latest*.yml, blockmap, mac zip).
+          # AppImage is the Linux in-app channel; deb stays manual-only.
           for f in \
             release/*.AppImage \
             release/*.deb \
             release/*.dmg \
             release/*.exe \
             release/*.zip \
-            release/*Setup*.exe
+            release/*Setup*.exe \
+            release/latest*.yml \
+            release/*.blockmap
           do
             cp "$f" dist-artifacts/
           done
