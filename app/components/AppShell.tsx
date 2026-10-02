@@ -41,6 +41,8 @@ type StoreListing = {
 type DesktopUpdateState = {
   version: string;
   ready: boolean;
+  error?: string | null;
+  installing?: boolean;
 };
 
 type Props = {
@@ -136,11 +138,24 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
         setDesktopUpdate((prev) => ({
           version: event.version,
           ready: prev?.version === event.version ? prev.ready : false,
+          error: null,
+          installing: false,
         }));
         setDesktopUpdateDismissed(false);
       } else if (event.type === "downloaded") {
-        setDesktopUpdate({ version: event.version, ready: true });
+        setDesktopUpdate({ version: event.version, ready: true, error: null, installing: false });
         setDesktopUpdateDismissed(false);
+      } else if (event.type === "error") {
+        setDesktopUpdate((prev) =>
+          prev
+            ? { ...prev, error: event.message, installing: false }
+            : { version: "?", ready: false, error: event.message, installing: false },
+        );
+        setDesktopUpdateDismissed(false);
+      } else if (event.type === "progress") {
+        setDesktopUpdate((prev) =>
+          prev ? { ...prev, ready: false, error: null, installing: false } : prev,
+        );
       }
     });
 
@@ -337,9 +352,24 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
 
   async function installDesktopUpdate() {
     const bridge = window.cyfersDesktop;
-    if (!bridge || !desktopUpdate?.ready) return;
-    const result = await bridge.installUpdate();
-    if (!result.ok && result.error) setError(result.error);
+    if (!bridge || !desktopUpdate?.ready || desktopUpdate.installing) return;
+    setDesktopUpdate((prev) => (prev ? { ...prev, installing: true, error: null } : prev));
+    try {
+      const result = await bridge.installUpdate();
+      if (!result.ok) {
+        const message = result.error || "Installeren van de update mislukt.";
+        setDesktopUpdate((prev) =>
+          prev ? { ...prev, installing: false, error: message } : prev,
+        );
+      }
+      // On success the app quits/restarts; keep installing state if still alive briefly.
+    } catch (installError) {
+      const message =
+        installError instanceof Error ? installError.message : "Installeren van de update mislukt.";
+      setDesktopUpdate((prev) =>
+        prev ? { ...prev, installing: false, error: message } : prev,
+      );
+    }
   }
 
   const showDesktopBanner = Boolean(desktopUpdate) && !desktopUpdateDismissed;
@@ -349,17 +379,26 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     <div className="app-shell fade-in">
       {showDesktopBanner && desktopUpdate ? (
         <div className="update-banner" role="status">
-          <p className="update-banner-text">
-            Nieuwe versie beschikbaar (v{desktopUpdate.version})
-          </p>
+          <div className="update-banner-copy">
+            <p className="update-banner-text">
+              Nieuwe versie beschikbaar (v{desktopUpdate.version})
+            </p>
+            {desktopUpdate.error ? (
+              <p className="update-banner-error">{desktopUpdate.error}</p>
+            ) : null}
+          </div>
           <div className="update-banner-actions">
             <button
               className="primary"
               type="button"
-              disabled={!desktopUpdate.ready}
+              disabled={!desktopUpdate.ready || Boolean(desktopUpdate.installing)}
               onClick={() => void installDesktopUpdate()}
             >
-              {desktopUpdate.ready ? "Installeren" : "Downloaden…"}
+              {desktopUpdate.installing
+                ? "Bezig…"
+                : desktopUpdate.ready
+                  ? "Installeren"
+                  : "Downloaden…"}
             </button>
             <button
               className="ghost"

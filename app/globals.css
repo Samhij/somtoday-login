@@ -417,6 +417,22 @@ h2 {
   font-size: 0.95rem;
 }
 
+.update-banner-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.update-banner-error {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--danger);
+  max-width: 42rem;
+}
+
 .update-banner-actions {
   display: flex;
   flex-wrap: wrap;

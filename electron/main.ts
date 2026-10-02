@@ -7,13 +7,14 @@ import {
   safeStorage,
   shell,
 } from "electron";
-import { autoUpdater } from "electron-updater";
+import { autoUpdater, type UpdateDownloadedEvent } from "electron-updater";
 import { spawn, type ChildProcess } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import { installMacUpdateFromZip, isMacAppSigned } from "./mac-update-install";
 import type { CyfersUpdateEvent } from "./preload";
 import { captureAuthorizationCode } from "./sso";
 
@@ -37,6 +38,8 @@ let controlServer: http.Server | null = null;
 let appPort = 0;
 let isQuitting = false;
 let updateDownloaded = false;
+/** Absolute path to the zip/AppImage/exe cached by electron-updater. */
+let downloadedUpdateFile: string | null = null;
 
 function userDataPath(...parts: string[]) {
   return path.join(app.getPath("userData"), ...parts);
@@ -269,9 +272,36 @@ function setupAutoUpdater() {
     if (!updateDownloaded) {
       return { ok: false, error: "Update is nog niet gedownload." };
     }
+
+    // Unsigned macOS builds cannot use Squirrel.Mac (Electron autoUpdater).
+    // Install by swapping the .app from the downloaded zip after quit.
+    if (process.platform === "darwin" && !isMacAppSigned()) {
+      try {
+        if (!downloadedUpdateFile || !fs.existsSync(downloadedUpdateFile)) {
+          return {
+            ok: false,
+            error: "Updatebestand ontbreekt. Start Cyfers opnieuw en probeer opnieuw.",
+          };
+        }
+        installMacUpdateFromZip(downloadedUpdateFile);
+        return { ok: true };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Installeren van de update mislukt.";
+        sendUpdateEvent({ type: "error", message });
+        return { ok: false, error: message };
+      }
+    }
+
     // User-initiated only — never auto-install on quit.
     setImmediate(() => {
-      autoUpdater.quitAndInstall(false, true);
+      try {
+        autoUpdater.quitAndInstall(false, true);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Installeren van de update mislukt.";
+        sendUpdateEvent({ type: "error", message });
+      }
     });
     return { ok: true };
   });
@@ -293,8 +323,9 @@ function setupAutoUpdater() {
     sendUpdateEvent({ type: "not-available", version: info.version });
   });
 
-  autoUpdater.on("update-downloaded", (info) => {
+  autoUpdater.on("update-downloaded", (info: UpdateDownloadedEvent) => {
     updateDownloaded = true;
+    downloadedUpdateFile = info.downloadedFile || null;
     sendUpdateEvent({ type: "downloaded", version: info.version });
   });
 
@@ -303,11 +334,31 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on("error", (error) => {
-    sendUpdateEvent({
-      type: "error",
-      message: error instanceof Error ? error.message : "Update mislukt.",
-    });
+    const raw = error instanceof Error ? error.message : String(error);
+    const message = humanizeUpdateError(raw);
+    sendUpdateEvent({ type: "error", message });
   });
+}
+
+/** Map common electron-updater / Squirrel errors to short Dutch copy. */
+function humanizeUpdateError(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (
+    lower.includes("code signature") ||
+    lower.includes("codesign") ||
+    lower.includes("not signed") ||
+    lower.includes("signature")
+  ) {
+    return "Automatische update mislukt (app is niet ondertekend). Download de nieuwe versie handmatig vanaf GitHub Releases.";
+  }
+  if (lower.includes("enospc") || lower.includes("no space")) {
+    return "Onvoldoende schijfruimte om de update te downloaden.";
+  }
+  if (lower.includes("net::") || lower.includes("network") || lower.includes("econn")) {
+    return "Update downloaden mislukt. Controleer je internetverbinding.";
+  }
+  if (raw.trim()) return raw;
+  return "Update mislukt.";
 }
 
 function createMainWindow(port: number) {
