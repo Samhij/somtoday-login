@@ -27,6 +27,7 @@ Sessions are encrypted on disk under the app userData directory.
   - `lib/browser-sso.ts` – Calls Electron SSO bridge over localhost.
   - `lib/session.ts` – httpOnly cookie + encrypted file-backed token store.
 - `plugins/` – Local samples + SDK types (`voorbeeld-info`, `cyfers.d.ts`); published plugins live in `cyfer-plugins`.
+- `packaging/aur/cyfers-bin/` – AUR `cyfers-bin` PKGBUILD (manual pacman updates; not auto-published).
 - `docs/plugins.md` – Dutch author guide for zip plugins.
 - `next.config.ts`, `tsconfig.json`, `package.json` – tooling/config (electron-builder).
 
@@ -104,6 +105,9 @@ catalog versions are newer.
   package installs must **not** run `checkForUpdates` or show the Installeren banner —
   users update those manually via their package manager. Windows NSIS and mac zip keep
   in-app updates when packaged.
+- AUR packaging lives under [`packaging/aur/cyfers-bin`](packaging/aur/cyfers-bin)
+  (`cyfers-bin`): extracts the release AppImage into `/opt/cyfers` so `APPIMAGE` is unset
+  and in-app updates stay off — AUR updates are manual (pacman / AUR helpers).
 - Flow (supported builds): check → download in background → sticky Dutch banner → user
   clicks **Installeren** (`quitAndInstall`). **Later** dismisses; updates never install
   silently on quit (`autoInstallOnAppQuit: false`).
