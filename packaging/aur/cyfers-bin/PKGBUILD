@@ -1,0 +1,94 @@
+# Maintainer: Cyfers <https://github.com/Samhij/somtoday-login>
+#
+# Binary package of Cyfers (Electron). The GitHub AppImage is extracted at
+# package() time into /opt/cyfers so the installed binary is a normal layout
+# owned by pacman. Do NOT launch via the AppImage runtime: that sets APPIMAGE
+# and would enable electron-updater. AUR/package installs update manually.
+
+pkgname=cyfers-bin
+pkgver=2.1.1
+pkgrel=1
+pkgdesc="Cyfers desktop client for Somtoday (prebuilt binary)"
+arch=('x86_64')
+url="https://github.com/Samhij/somtoday-login"
+license=('LicenseRef-Unknown')
+depends=(
+  'alsa-lib'
+  'at-spi2-core'
+  'gtk3'
+  'libnotify'
+  'libsecret'
+  'libxss'
+  'libxtst'
+  'nss'
+  'util-linux-libs'
+  'xdg-utils'
+)
+optdepends=(
+  'libappindicator-gtk3: tray icon support'
+)
+provides=('cyfers')
+conflicts=('cyfers')
+options=('!strip' '!debug')
+source=(
+  "Cyfers-${pkgver}.AppImage::https://github.com/Samhij/somtoday-login/releases/download/v${pkgver}/Cyfers-${pkgver}.AppImage"
+  "cyfers.desktop"
+  "cyfers.sh"
+)
+sha256sums=(
+  'cc185260cec53d8860e3ee691a590cdae1c033fabcca3d04e280fbd0f66baf1b'
+  'e254f700d4e058e3c166e205676879a4e35edfcb038de5138eca722fc142f501'
+  '4da73f35038328c872ce8365a453e43b2e3343bbf395b0bc4d3d87edd27d7601'
+)
+
+prepare() {
+  chmod +x "Cyfers-${pkgver}.AppImage"
+  # Extract without FUSE; do not run the AppImage (that would set APPIMAGE).
+  "./Cyfers-${pkgver}.AppImage" --appimage-extract
+}
+
+package() {
+  local _extract="${srcdir}/squashfs-root"
+  local _opt="${pkgdir}/opt/cyfers"
+
+  install -dm755 "${_opt}"
+
+  # Electron runtime + app resources (skip AppImage chrome).
+  cp -a "${_extract}/." "${_opt}/"
+  rm -f "${_opt}/AppRun" "${_opt}/cyfers.desktop" "${_opt}/.DirIcon"
+  rm -rf "${_opt}/usr"
+
+  # chrome-sandbox needs setuid for Chromium sandboxing without --no-sandbox.
+  if [[ -f "${_opt}/chrome-sandbox" ]]; then
+    chmod 4755 "${_opt}/chrome-sandbox"
+  fi
+
+  # Launcher: pacman-owned path; APPIMAGE intentionally unset.
+  install -Dm755 "${srcdir}/cyfers.sh" "${pkgdir}/usr/bin/cyfers"
+
+  install -Dm644 "${srcdir}/cyfers.desktop" \
+    "${pkgdir}/usr/share/applications/cyfers.desktop"
+
+  # Icons from the AppImage payload.
+  local _icons="${_extract}/usr/share/icons/hicolor"
+  if [[ -d "${_icons}" ]]; then
+    for size in 16x16 32x32 48x48 64x64 128x128 256x256; do
+      local icon="${_icons}/${size}/apps/cyfers.png"
+      if [[ -f "${icon}" ]]; then
+        install -Dm644 "${icon}" \
+          "${pkgdir}/usr/share/icons/hicolor/${size}/apps/cyfers.png"
+      fi
+    done
+  fi
+
+  # Bundled third-party license texts (upstream app license is undeclared).
+  install -dm755 "${pkgdir}/usr/share/licenses/${pkgname}"
+  if [[ -f "${_extract}/LICENSE.electron.txt" ]]; then
+    install -Dm644 "${_extract}/LICENSE.electron.txt" \
+      "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.electron.txt"
+  fi
+  if [[ -f "${_extract}/LICENSES.chromium.html" ]]; then
+    install -Dm644 "${_extract}/LICENSES.chromium.html" \
+      "${pkgdir}/usr/share/licenses/${pkgname}/LICENSES.chromium.html"
+  fi
+}

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Cyfers
+Comment=Cyfers desktop client for Somtoday
+Exec=cyfers %U
+Icon=cyfers
+Terminal=false
+Type=Application
+Categories=Education;
+StartupWMClass=Cyfers
