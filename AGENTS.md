@@ -111,6 +111,10 @@ catalog versions are newer.
 - Flow (supported builds): check → download in background → sticky Dutch banner → user
   clicks **Installeren** (`quitAndInstall`). **Later** dismisses; updates never install
   silently on quit (`autoInstallOnAppQuit: false`).
+- **Unsigned macOS:** Squirrel.Mac cannot install. After the zip downloads, Installeren
+  swaps `Cyfers.app` from the cached zip (via a post-quit `ditto` script) and relaunches.
+  Signed builds still use `quitAndInstall`. Install/download failures show Dutch text on
+  the banner (not only the plugins error slot).
 - Preload bridge: `window.cyfersDesktop` (`getVersion`, `checkForUpdates`, `installUpdate`,
   `onUpdateEvent`). Absent outside Electron — UI no-ops safely. On unsupported Linux
   packages, `checkForUpdates` returns `ok: false` with a Dutch reason and emits no events.
