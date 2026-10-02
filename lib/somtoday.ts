@@ -1,7 +1,15 @@
 import http from "node:http";
 import https from "node:https";
 import { captureAuthorizationCode } from "./browser-sso";
-import type { GradeInfo, SessionInfo, SomtodayGrade, SomtodayListResponse, StudentInfo } from "./types";
+import type {
+  GradeInfo,
+  SessionInfo,
+  SomtodayGrade,
+  SomtodayListResponse,
+  SomtodaySchooljaar,
+  SomtodayStudent,
+  StudentInfo,
+} from "./types";
 import { updateSession, type StoredSession } from "./session";
 
 const CLIENT_ID = "somtoday-leerling-web";
@@ -288,17 +296,7 @@ export async function refreshTokens(refreshToken: string): Promise<TokenResponse
   return payload;
 }
 
-type RawLink = { id?: number | string; rel?: string; href?: string };
-type RawStudent = {
-  links?: RawLink[];
-  UUID?: string;
-  uuid?: string;
-  roepnaam?: string;
-  tussenvoegsel?: string;
-  achternaam?: string;
-  leerlingnummer?: number | string;
-  email?: string;
-};
+type RawLink = { id?: number | string; rel?: string; type?: string; href?: string };
 
 const GRADE_QUERY =
   "type=Toetskolom&type=DeeltoetsKolom&type=Werkstukcijferkolom&type=Advieskolom" +
@@ -363,7 +361,7 @@ function studentHref(links: RawLink[] | undefined) {
   return links?.find((link) => (link.href || "").includes("/leerlingen/"))?.href ?? null;
 }
 
-function mapStudent(student: RawStudent): StudentInfo {
+function mapStudent(student: SomtodayStudent): StudentInfo {
   return {
     id: resourceId(student.links) ?? 0,
     uuid: student.UUID || student.uuid || null,
@@ -374,7 +372,7 @@ function mapStudent(student: RawStudent): StudentInfo {
   };
 }
 
-async function adoptApiOrigin(session: StoredSession, items: RawStudent[]) {
+async function adoptApiOrigin(session: StoredSession, items: SomtodayStudent[]) {
   for (const student of items) {
     const href = studentHref(student.links);
     if (!href) continue;
@@ -498,7 +496,7 @@ function nodeFetch(
   });
 }
 
-function studentName(student: RawStudent) {
+function studentName(student: SomtodayStudent) {
   return [student.roepnaam, student.tussenvoegsel, student.achternaam].filter(Boolean).join(" ");
 }
 
@@ -570,14 +568,14 @@ export async function loadPluginContext(session: StoredSession): Promise<PluginS
 
   const studentsResponse = await somFetch(session, "/rest/v1/leerlingen");
   if (!studentsResponse.ok) throw new Error("Leerlinggegevens laden mislukt.");
-  const studentsPayload = (await studentsResponse.json()) as { items?: RawStudent[] };
+  const studentsPayload = (await studentsResponse.json()) as { items?: SomtodayStudent[] };
   await adoptApiOrigin(session, studentsPayload.items ?? []);
   const students: StudentInfo[] = (studentsPayload.items ?? []).map(mapStudent);
 
   let schoolYear: string | null = null;
   const yearResponse = await somFetch(session, "/rest/v1/schooljaren/huidig");
   if (yearResponse.ok) {
-    const year = (await yearResponse.json()) as { naam?: string };
+    const year = (await yearResponse.json()) as SomtodaySchooljaar;
     schoolYear = year.naam ?? null;
   }
 
@@ -594,14 +592,14 @@ export async function loadSessionInfo(session: StoredSession): Promise<SessionIn
 
   const studentsResponse = await somFetch(session, "/rest/v1/leerlingen");
   if (!studentsResponse.ok) throw new Error("Leerlinggegevens laden mislukt.");
-  const studentsPayload = (await studentsResponse.json()) as { items?: RawStudent[] };
+  const studentsPayload = (await studentsResponse.json()) as { items?: SomtodayStudent[] };
   await adoptApiOrigin(session, studentsPayload.items ?? []);
   const students: StudentInfo[] = (studentsPayload.items ?? []).map(mapStudent);
 
   let schoolYear: string | null = null;
   const yearResponse = await somFetch(session, "/rest/v1/schooljaren/huidig");
   if (yearResponse.ok) {
-    const year = (await yearResponse.json()) as { naam?: string };
+    const year = (await yearResponse.json()) as SomtodaySchooljaar;
     schoolYear = year.naam ?? null;
   }
 
