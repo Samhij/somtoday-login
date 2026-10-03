@@ -551,13 +551,15 @@ h2 {
 
 .plugin-frame-widget {
   flex: none;
-  min-height: 220px;
-  height: 260px;
+  min-height: 320px;
+  height: 380px;
 }
 
 .overview {
-  padding: 1.5rem 1.5rem 3rem;
-  width: min(960px, 100%);
+  padding: 1.5rem 1.1rem 3rem;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
 }
 
 .overview-head h1 {
@@ -592,7 +594,11 @@ h2 {
 
 .widget-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* Cap at 3 columns on desktop; auto-fit lets 1–2 widgets grow to fill. */
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(max(260px, calc((100% - 2rem) / 3)), 1fr)
+  );
   gap: 1rem;
   margin-top: 0.85rem;
 }
@@ -820,5 +826,18 @@ html[data-theme="dark"] .modal-backdrop {
   .plugin-actions {
     align-items: flex-start;
     flex-direction: row;
+  }
+
+  .widget-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .plugin-frame-widget {
+    min-height: 280px;
+    height: 320px;
+  }
+
+  .overview {
+    padding: 1.25rem 0.85rem 2.5rem;
   }
 }
