@@ -17,6 +17,7 @@ import path from "node:path";
 import { installMacUpdateFromZip, isMacAppSigned } from "./mac-update-install";
 import type { CyfersUpdateEvent } from "./preload";
 import { captureAuthorizationCode } from "./sso";
+import { loadWindowState, trackWindowState } from "./window-state";
 
 const isDev = !app.isPackaged;
 
@@ -40,6 +41,8 @@ let isQuitting = false;
 let updateDownloaded = false;
 /** Absolute path to the zip/AppImage/exe cached by electron-updater. */
 let downloadedUpdateFile: string | null = null;
+/** Flush pending window-state write (set when main window is created). */
+let flushWindowState: (() => void) | null = null;
 
 function userDataPath(...parts: string[]) {
   return path.join(app.getPath("userData"), ...parts);
@@ -362,9 +365,15 @@ function humanizeUpdateError(raw: string): string {
 }
 
 function createMainWindow(port: number) {
+  const statePath = userDataPath("window-state.json");
+  const state = loadWindowState(statePath);
+
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 840,
+    width: state.width,
+    height: state.height,
+    ...(typeof state.x === "number" && typeof state.y === "number"
+      ? { x: state.x, y: state.y }
+      : {}),
     minWidth: 900,
     minHeight: 600,
     show: false,
@@ -377,6 +386,11 @@ function createMainWindow(port: number) {
       sandbox: true,
     },
   });
+
+  if (state.isMaximized) mainWindow.maximize();
+  if (state.isFullScreen) mainWindow.setFullScreen(true);
+
+  flushWindowState = trackWindowState(mainWindow, statePath);
 
   mainWindow.setMenuBarVisibility(isDev);
   mainWindow.once("ready-to-show", () => {
@@ -397,6 +411,7 @@ function createMainWindow(port: number) {
   mainWindow.loadURL(`http://127.0.0.1:${port}`);
   mainWindow.on("closed", () => {
     mainWindow = null;
+    flushWindowState = null;
   });
 }
 
@@ -471,6 +486,7 @@ if (!gotLock) {
 
   app.on("before-quit", () => {
     isQuitting = true;
+    flushWindowState?.();
     shutdown();
   });
 }

@@ -13,6 +13,7 @@ Sessions are encrypted on disk under the app userData directory.
 
 - `electron/` – Electron main process, preload, SSO BrowserWindow capture.
   - `electron/main.ts` – lifecycle, Next spawn, localhost SSO control bridge, autoUpdater.
+  - `electron/window-state.ts` – persist/restore main window bounds + maximized/fullscreen (`userData/window-state.json`).
   - `electron/preload.ts` – `cyfersDesktop` update bridge (contextIsolation).
   - `electron/sso.ts` – school IdP login window + OAuth code capture.
 - `app/` – Next.js App Router UI and API route handlers.
