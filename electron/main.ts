@@ -433,6 +433,9 @@ async function boot() {
     CYFERS_SSO_URL: `http://127.0.0.1:${ssoPort}`,
     CYFERS_SSO_SECRET: ssoSecret,
     NODE_ENV: isDev ? "development" : "production",
+    // Unpackaged / npm run dev may auto-discover ../cyfer-plugins/plugins.
+    // Packaged builds only honor an explicit CYFERS_PLUGIN_DEV_DIR from the parent env.
+    ...(isDev ? { CYFERS_UNPACKAGED: "1" } : {}),
   };
 
   await startNextServer(env, appPort);

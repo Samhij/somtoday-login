@@ -639,6 +639,12 @@ h2 {
   margin-top: 2rem;
 }
 
+.dev-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
 .manage-section-head {
   display: flex;
   align-items: center;

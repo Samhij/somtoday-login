@@ -21,6 +21,24 @@ export type PluginSummary = {
   kind: PluginKind;
   nav: { label: string; icon: string; order: number };
   permissions: { api: string[] };
+  devPreview?: boolean;
+  devLinkMode?: "symlink" | "copy" | null;
+};
+
+type DevPluginListing = {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  kind: PluginKind;
+  nav: { label: string; icon: string; order: number };
+  permissions: { api: string[] };
+  folder: string;
+  loaded: boolean;
+  loadedVersion: string | null;
+  linkMode: "symlink" | "copy" | null;
+  enabled: boolean | null;
 };
 
 type StoreListing = {
@@ -67,12 +85,46 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [desktopUpdate, setDesktopUpdate] = useState<DesktopUpdateState | null>(null);
   const [desktopUpdateDismissed, setDesktopUpdateDismissed] = useState(false);
+  const [devAvailable, setDevAvailable] = useState(false);
+  const [devRoot, setDevRoot] = useState<string | null>(null);
+  const [devPlugins, setDevPlugins] = useState<DevPluginListing[]>([]);
+  const [devLoadingId, setDevLoadingId] = useState<string | null>(null);
+  const [reloadTokens, setReloadTokens] = useState<Record<string, number>>({});
+
+  const bumpReload = useCallback((id: string) => {
+    setReloadTokens((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
+  }, []);
 
   const loadPlugins = useCallback(async () => {
     const response = await fetch("/api/plugins");
     const payload = (await response.json()) as { plugins?: PluginSummary[]; error?: string };
     if (!response.ok) throw new Error(payload.error || "Plugins laden mislukt.");
     setPlugins(payload.plugins ?? []);
+  }, []);
+
+  const loadDevPlugins = useCallback(async () => {
+    try {
+      const response = await fetch("/api/plugins/dev");
+      const payload = (await response.json()) as {
+        available?: boolean;
+        root?: string | null;
+        plugins?: DevPluginListing[];
+        error?: string;
+      };
+      if (!response.ok) {
+        setDevAvailable(false);
+        setDevPlugins([]);
+        setDevRoot(null);
+        return;
+      }
+      setDevAvailable(Boolean(payload.available));
+      setDevRoot(payload.root ?? null);
+      setDevPlugins(payload.plugins ?? []);
+    } catch {
+      setDevAvailable(false);
+      setDevPlugins([]);
+      setDevRoot(null);
+    }
   }, []);
 
   const loadStore = useCallback(async () => {
@@ -171,7 +223,37 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   useEffect(() => {
     if (active !== "__manage__") return;
     void loadStore();
-  }, [active, loadStore]);
+    void loadDevPlugins();
+  }, [active, loadStore, loadDevPlugins]);
+
+  // Discover preview sources on boot (dev / CYFERS_PLUGIN_DEV_DIR / sibling repo).
+  useEffect(() => {
+    void loadDevPlugins();
+  }, [loadDevPlugins]);
+
+  const hasDevPreview = useMemo(() => plugins.some((plugin) => plugin.devPreview), [plugins]);
+
+  // Hot-reload preview plugins when files under the source folder change.
+  useEffect(() => {
+    if (!devAvailable) return;
+    if (!hasDevPreview && active !== "__manage__") return;
+
+    const source = new EventSource("/api/plugins/dev/events");
+    source.addEventListener("change", (event) => {
+      try {
+        const data = JSON.parse((event as MessageEvent).data) as { id?: string };
+        if (!data.id) return;
+        bumpReload(data.id);
+        void loadPlugins();
+        void loadDevPlugins();
+      } catch {
+        // ignore malformed events
+      }
+    });
+    return () => {
+      source.close();
+    };
+  }, [devAvailable, hasDevPreview, active, bumpReload, loadPlugins, loadDevPlugins]);
 
   useEffect(() => {
     if (!storeOpen) return;
@@ -242,6 +324,32 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     if (active === id) setActive("__overview__");
     await loadPlugins();
     await loadStore();
+  }
+
+  async function loadOrReloadDevPlugin(id: string, mode: "load" | "reload") {
+    setDevLoadingId(id);
+    setError(null);
+    try {
+      const response = await fetch(
+        mode === "reload" ? "/api/plugins/dev/reload" : "/api/plugins/dev/load",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id }),
+        },
+      );
+      const payload = (await response.json()) as { plugin?: PluginSummary; error?: string };
+      if (!response.ok) throw new Error(payload.error || (mode === "reload" ? "Herladen mislukt." : "Laden mislukt."));
+      await loadPlugins();
+      await loadDevPlugins();
+      bumpReload(id);
+      if (payload.plugin?.kind === "page") setActive(payload.plugin.id);
+      else if (payload.plugin?.kind === "widget") setActive("__overview__");
+    } catch (devError) {
+      setError(devError instanceof Error ? devError.message : "Ontwikkelplugin laden mislukt.");
+    } finally {
+      setDevLoadingId(null);
+    }
   }
 
   async function onUpload(event: FormEvent<HTMLFormElement>) {
@@ -483,6 +591,73 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                 </button>
               </div>
 
+              {devAvailable ? (
+                <section className="manage-section">
+                  <div className="manage-section-head">
+                    <h2>Ontwikkeling</h2>
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={() => void loadDevPlugins()}
+                      disabled={Boolean(devLoadingId)}
+                    >
+                      Vernieuwen
+                    </button>
+                  </div>
+                  <p className="meta">
+                    Unpacked plugins uit{" "}
+                    <code className="dev-path">{devRoot}</code>. Laden koppelt ze zonder zip;
+                    wijzigingen worden herladen (of klik Herladen).
+                  </p>
+                  {devPlugins.length === 0 ? (
+                    <p className="meta">Geen geldige pluginmappen gevonden.</p>
+                  ) : (
+                    <ul className="plugin-list">
+                      {devPlugins.map((entry) => {
+                        const busy = devLoadingId === entry.id;
+                        return (
+                          <li key={entry.id} className="plugin-row">
+                            <div>
+                              <strong>{entry.name}</strong>
+                              <p className="meta">
+                                {(entry.kind ?? "page") === "widget" ? "Widget" : "Pagina"} ·{" "}
+                                {entry.nav.label} · v{entry.version}
+                                {entry.loaded
+                                  ? ` · geladen${entry.linkMode === "symlink" ? " (link)" : entry.linkMode === "copy" ? " (kopie)" : ""}`
+                                  : " · niet geladen"}
+                                {entry.author ? ` · ${entry.author}` : ""}
+                              </p>
+                              {entry.description ? <p className="meta">{entry.description}</p> : null}
+                            </div>
+                            <div className="plugin-actions">
+                              {entry.loaded ? (
+                                <button
+                                  className="primary"
+                                  type="button"
+                                  disabled={Boolean(devLoadingId)}
+                                  onClick={() => void loadOrReloadDevPlugin(entry.id, "reload")}
+                                >
+                                  {busy ? "Bezig…" : "Herladen"}
+                                </button>
+                              ) : (
+                                <button
+                                  className="primary"
+                                  type="button"
+                                  disabled={Boolean(devLoadingId)}
+                                  onClick={() => void loadOrReloadDevPlugin(entry.id, "load")}
+                                >
+                                  {busy ? "Bezig…" : "Laden"}
+                                </button>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              ) : null}
+
               <section className="manage-section">
                 <div className="manage-section-head">
                   <h2>Geïnstalleerd</h2>
@@ -526,6 +701,7 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                             {(plugin.kind ?? "page") === "widget" ? "Widget" : "Pagina"} · {plugin.nav.label} · v
                             {plugin.version}
                             {updateAvailable && listing ? ` · update v${listing.version}` : ""}
+                            {plugin.devPreview ? " · voorbeeld" : ""}
                             {plugin.builtin ? " · ingebouwd" : ""}
                             {plugin.author ? ` · ${plugin.author}` : ""}
                           </p>
@@ -550,6 +726,16 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                             />
                             <span>{plugin.enabled ? "Aan" : "Uit"}</span>
                           </label>
+                          {plugin.devPreview ? (
+                            <button
+                              className="ghost"
+                              type="button"
+                              disabled={Boolean(devLoadingId)}
+                              onClick={() => void loadOrReloadDevPlugin(plugin.id, "reload")}
+                            >
+                              {devLoadingId === plugin.id ? "Bezig…" : "Herladen"}
+                            </button>
+                          ) : null}
                           {plugin.removable ? (
                             <button
                               className="ghost"
@@ -578,11 +764,16 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
           ) : null}
 
           {active === "__overview__" && context ? (
-            <OverviewPage context={context} widgets={widgets} />
+            <OverviewPage context={context} widgets={widgets} reloadTokens={reloadTokens} />
           ) : null}
 
           {active !== "__manage__" && active !== "__overview__" ? (
-            <PluginFrame key={active} pluginId={active} context={context} />
+            <PluginFrame
+              key={active}
+              pluginId={active}
+              context={context}
+              reloadToken={reloadTokens[active] ?? 0}
+            />
           ) : null}
         </section>
       </div>

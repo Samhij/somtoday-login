@@ -8,6 +8,8 @@ type Props = {
   pluginId: string;
   context: PluginSessionContext | null;
   variant?: "page" | "widget";
+  /** Bump to force re-fetch of entry HTML (dev preview hot reload). */
+  reloadToken?: number;
 };
 
 type HostMessage = {
@@ -27,7 +29,7 @@ function readHostTheme(): "light" | "dark" {
   return attr === "dark" ? "dark" : "light";
 }
 
-export function PluginFrame({ pluginId, context, variant = "page" }: Props) {
+export function PluginFrame({ pluginId, context, variant = "page", reloadToken = 0 }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [srcdoc, setSrcdoc] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function PluginFrame({ pluginId, context, variant = "page" }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [pluginId]);
+  }, [pluginId, reloadToken]);
 
   useEffect(() => {
     function pushTheme() {
