@@ -82,8 +82,32 @@ flowchart TB
 2. Student signs in; opaque `som_sid` cookie references tokens stored encrypted under userData.
 3. Shell lists enabled plugins; each tab is an isolated iframe (`sandbox="allow-scripts"`).
 4. Injected SDK calls `cyfers.fetch(path)`; host proxies only allowlisted `/rest/...` paths.
-5. Overview is host UI; plugins come from zip upload or the marketplace (`cyfer-plugins`).
+5. Overview is host UI; plugins come from zip upload, the marketplace (`cyfer-plugins`),
+   or an unpacked **dev preview** directory (see Plugin development preview below).
    `kind: "page"` plugins are sidebar tabs, `kind: "widget"` only appear on Overview.
+
+## Plugin development preview
+
+Authors can load plugins from a folder (same layout as a zip: `manifest.json` + `ui/`)
+without zipping on every change.
+
+**Source resolution (server-side):**
+
+1. If `CYFERS_PLUGIN_DEV_DIR` is set → that absolute/relative path (works in packaged
+   builds too — explicit opt-in).
+2. Else, only when unpackaged / `npm run dev` (`CYFERS_UNPACKAGED=1` or
+   `NODE_ENV !== "production"`) → sibling `../cyfer-plugins/plugins` if it exists.
+3. Packaged AppImage / installers do **not** auto-scan sibling repos.
+
+**UI:** On the Plugins screen, section **Ontwikkeling** lists folders from that root.
+**Laden** installs via symlink (fallback: copy) into the normal registry path and
+enables the plugin. **Herladen** re-syncs manifest + files. File changes under a
+loaded preview plugin trigger an automatic refresh of the plugin iframe (SSE +
+`fs.watch`); Herladen remains available if the watcher misses an edit.
+
+**Manual check:** clone `cyfer-plugins` next to `somtoday-login`, run `npm run dev`,
+sign in → Plugins → Ontwikkeling → **Laden** on e.g. `voorbeeld-info` → edit
+`ui/` → iframe updates (or click **Herladen**).
 
 ## Testing Strategy
 
@@ -163,6 +187,8 @@ are intentionally out of scope for this change set.
 | `CYFERS_SESSION_KEY` | AES key material for session file |
 | `CYFERS_SSO_URL` / `CYFERS_SSO_SECRET` | Localhost bridge for SSO capture |
 | `CYFERS_PLUGIN_STORE_URL` | Override marketplace catalog URL |
+| `CYFERS_PLUGIN_DEV_DIR` | Unpacked plugins root for preview (opt-in; required in packaged builds) |
+| `CYFERS_UNPACKAGED` | Set by Electron when `!app.isPackaged`; allows sibling `../cyfer-plugins/plugins` |
 | `permissions.api` | Per-plugin Somtoday path globs |
 | `nav.icon` | Lucide icon name rendered by host |
 | `vendor/cyfer-plugin-types` | Vendored copy of `cyfer-plugins/types` (edit upstream, then `npm run sync:plugin-types`) |

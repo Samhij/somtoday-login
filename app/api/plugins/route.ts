@@ -21,6 +21,8 @@ export async function GET() {
         kind: plugin.kind ?? "page",
         nav: plugin.nav,
         permissions: plugin.permissions,
+        devPreview: Boolean(plugin.devPreview),
+        devLinkMode: plugin.devLinkMode ?? null,
       })),
     });
   } catch (error) {

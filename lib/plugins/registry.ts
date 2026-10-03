@@ -3,11 +3,19 @@ import path from "path";
 import JSZip from "jszip";
 import {parseManifest, type PluginManifest} from "./manifest";
 
+export type PluginDevLinkMode = "symlink" | "copy";
+
 export type InstalledPlugin = PluginManifest & {
     enabled: boolean;
     /** @deprecated No managed builtins remain; kept for index compatibility. */
     builtin?: boolean;
     installedAt: string;
+    /** True when loaded from an unpacked devel directory (not zip/store). */
+    devPreview?: boolean;
+    /** Absolute source directory for a preview plugin. */
+    devSource?: string;
+    /** How the preview is linked into the registry path. */
+    devLinkMode?: PluginDevLinkMode;
 };
 
 type PluginIndex = {
@@ -119,6 +127,125 @@ function safeJoin(root: string, relative: string) {
     return resolved;
 }
 
+async function listAllowedPluginFiles(sourceRoot: string): Promise<string[]> {
+    const files: string[] = ["manifest.json"];
+    const uiRoot = path.join(sourceRoot, "ui");
+    async function walk(dir: string, prefix: string) {
+        let entries;
+        try {
+            entries = await fs.readdir(dir, {withFileTypes: true});
+        } catch {
+            throw new Error("ui/ ontbreekt in de pluginmap.");
+        }
+        for (const entry of entries) {
+            const relative = path.posix.join(prefix, entry.name);
+            if (entry.isDirectory()) {
+                await walk(path.join(dir, entry.name), relative);
+            } else if (entry.isFile()) {
+                files.push(relative);
+            }
+        }
+    }
+    await walk(uiRoot, "ui");
+    return files;
+}
+
+async function copyPluginDirectory(sourceRoot: string, target: string): Promise<void> {
+    const files = await listAllowedPluginFiles(sourceRoot);
+    await fs.rm(target, {recursive: true, force: true});
+    await fs.mkdir(target, {recursive: true});
+    for (const relative of files) {
+        if (relative.includes("..")) throw new Error("Ongeldig pad in pluginmap.");
+        const dest = safeJoin(target, relative);
+        await fs.mkdir(path.dirname(dest), {recursive: true});
+        await fs.copyFile(path.join(sourceRoot, relative), dest);
+    }
+}
+
+async function linkPluginDirectory(sourceRoot: string, target: string): Promise<PluginDevLinkMode> {
+    await fs.rm(target, {recursive: true, force: true});
+    await fs.mkdir(path.dirname(target), {recursive: true});
+    try {
+        const linkType = process.platform === "win32" ? "junction" : "dir";
+        await fs.symlink(sourceRoot, target, linkType);
+        return "symlink";
+    } catch {
+        await copyPluginDirectory(sourceRoot, target);
+        return "copy";
+    }
+}
+
+export type InstallFromDirectoryOptions = {
+    devPreview?: boolean;
+    preserveEnabled?: boolean;
+};
+
+/** Install or refresh a plugin from an unpacked directory (manifest.json + ui/). */
+export async function installPluginFromDirectory(
+    sourceRoot: string,
+    options: InstallFromDirectoryOptions = {},
+): Promise<InstalledPlugin> {
+    const resolvedSource = path.resolve(sourceRoot);
+    let sourceStat;
+    try {
+        sourceStat = await fs.stat(resolvedSource);
+    } catch {
+        throw new Error("Pluginmap niet gevonden.");
+    }
+    if (!sourceStat.isDirectory()) throw new Error("Pluginpad is geen map.");
+
+    const manifestText = await fs.readFile(path.join(resolvedSource, "manifest.json"), "utf8");
+    const manifest = parseManifest(JSON.parse(manifestText));
+
+    const folderName = path.basename(resolvedSource);
+    if (folderName !== manifest.id) {
+        throw new Error(`mapnaam “${folderName}” moet gelijk zijn aan manifest.id “${manifest.id}”.`);
+    }
+
+    const files = await listAllowedPluginFiles(resolvedSource);
+    if (!files.includes(manifest.entry.replace(/\\/g, "/"))) {
+        throw new Error(`Entry ontbreekt: ${manifest.entry}`);
+    }
+
+    const target = pluginDir(manifest.id);
+    // Never symlink the registry root onto itself.
+    if (path.resolve(target) === resolvedSource) {
+        throw new Error("Kan de geïnstalleerde pluginmap niet als bron gebruiken.");
+    }
+
+    const linkMode = await linkPluginDirectory(resolvedSource, target);
+    const entryPath = safeJoin(target, manifest.entry);
+    await fs.access(entryPath);
+
+    const index = await readIndex();
+    const existing = index.plugins.find((item) => item.id === manifest.id);
+    const enabled =
+        typeof options.preserveEnabled === "boolean"
+            ? options.preserveEnabled
+            : existing
+              ? existing.enabled
+              : true;
+
+    const installed: InstalledPlugin = {
+        ...manifest,
+        enabled,
+        builtin: false,
+        installedAt: existing?.installedAt ?? new Date().toISOString(),
+        devPreview: Boolean(options.devPreview),
+        devSource: options.devPreview ? resolvedSource : undefined,
+        devLinkMode: options.devPreview ? linkMode : undefined,
+    };
+
+    if (existing) {
+        const idx = index.plugins.findIndex((item) => item.id === manifest.id);
+        index.plugins[idx] = installed;
+    } else {
+        index.plugins.push(installed);
+    }
+    await writeIndex(index);
+    return installed;
+}
+
 export async function installPluginZip(buffer: Buffer): Promise<InstalledPlugin> {
     if (buffer.byteLength > MAX_ZIP_BYTES) {
         throw new Error("Plugin-zip is groter dan 2 MB.");
@@ -165,12 +292,17 @@ export async function installPluginZip(buffer: Buffer): Promise<InstalledPlugin>
         enabled: true,
         builtin: false,
         installedAt: new Date().toISOString(),
+        // Zip/store installs clear any prior preview linkage.
+        devPreview: false,
+        devSource: undefined,
+        devLinkMode: undefined,
     };
 
     const index = await readIndex();
     const existing = index.plugins.findIndex((item) => item.id === manifest.id);
     if (existing >= 0) {
         installed.enabled = index.plugins[existing].enabled;
+        installed.installedAt = index.plugins[existing].installedAt;
         index.plugins[existing] = installed;
     } else {
         index.plugins.push(installed);

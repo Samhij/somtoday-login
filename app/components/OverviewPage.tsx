@@ -13,9 +13,10 @@ type WidgetPlugin = {
 type Props = {
   context: PluginSessionContext;
   widgets: WidgetPlugin[];
+  reloadTokens?: Record<string, number>;
 };
 
-export function OverviewPage({ context, widgets }: Props) {
+export function OverviewPage({ context, widgets, reloadTokens }: Props) {
   return (
     <div className="overview">
       <header className="overview-head">
@@ -57,7 +58,12 @@ export function OverviewPage({ context, widgets }: Props) {
                     <strong>{widget.nav.label}</strong>
                   </header>
                   <div className="widget-card-body">
-                    <PluginFrame pluginId={widget.id} context={context} variant="widget" />
+                    <PluginFrame
+                      pluginId={widget.id}
+                      context={context}
+                      variant="widget"
+                      reloadToken={reloadTokens?.[widget.id] ?? 0}
+                    />
                   </div>
                 </article>
               );

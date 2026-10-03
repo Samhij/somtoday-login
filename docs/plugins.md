@@ -21,6 +21,13 @@ mijn-plugin/
 Zip de map (of de inhoud) en upload die onder **Plugins** na het inloggen.
 Maximaal 2 MB. Alleen `manifest.json` en bestanden onder `ui/` zijn toegestaan.
 
+### Snel ontwikkelen (zonder zip)
+
+Tijdens `npm run dev` (of met `CYFERS_PLUGIN_DEV_DIR`) toont Cyfers onder **Plugins →
+Ontwikkeling** de mappen uit `../cyfer-plugins/plugins` (sibling-repo) of uit de
+ingestelde ontwikkelmap. Klik **Laden** om de unpacked map te koppelen; **Herladen**
+(of automatische file-watch) vernieuwt de plugin zonder opnieuw te zippen.
+
 ## manifest.json
 
 ### Pagina
