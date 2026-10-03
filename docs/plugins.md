@@ -174,6 +174,14 @@ Voorbeeld eigen stylesheet:
 }
 ```
 
+## TypeScript / autocomplete
+
+Plugin-facing types (SDK, `PluginManifest`, Somtoday REST-vormen) leven in de
+marketplace-repo: [`cyfer-plugins/types`](https://github.com/Samhij/cyfer-plugins/tree/main/types).
+Open die repo in je editor voor autocomplete op `cyfers.*` en `Somtoday*` (via
+`jsconfig.json`). De host houdt een vendored kopie bij onder
+`vendor/cyfer-plugin-types/` (`npm run sync:plugin-types`).
+
 ## SDK (`window.cyfers`)
 
 Wordt automatisch geïnjecteerd:

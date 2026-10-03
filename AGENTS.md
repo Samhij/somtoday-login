@@ -27,7 +27,8 @@ Sessions are encrypted on disk under the app userData directory.
   - `lib/somtoday.ts` – OAuth, exported `somFetch`, session/plugin context.
   - `lib/browser-sso.ts` – Calls Electron SSO bridge over localhost.
   - `lib/session.ts` – httpOnly cookie + encrypted file-backed token store.
-- `plugins/` – Local samples + SDK types (`voorbeeld-info`, `cyfers.d.ts`); published plugins live in `cyfer-plugins`.
+- `plugins/` – Local samples + thin ambient shim (`cyfers.d.ts`); published plugins live in `cyfer-plugins`.
+- `vendor/cyfer-plugin-types/` – Vendored plugin-facing types from `cyfer-plugins/types/` (source of truth).
 - `packaging/aur/cyfers-bin/` – AUR `cyfers-bin` PKGBUILD (manual pacman updates; not auto-published).
 - `docs/plugins.md` – Dutch author guide for zip plugins.
 - `next.config.ts`, `tsconfig.json`, `package.json` – tooling/config (electron-builder).
@@ -42,6 +43,7 @@ npm run pack:linux   # AppImage + deb
 npm run pack:win     # NSIS installer
 npm run pack:mac     # DMG + zip (updater)
 npm run typecheck
+npm run sync:plugin-types   # refresh vendor/ from sibling cyfer-plugins or GitHub
 ```
 
 Unsigned builds may trigger Gatekeeper (macOS) or SmartScreen (Windows); code signing is a
@@ -163,6 +165,7 @@ are intentionally out of scope for this change set.
 | `CYFERS_PLUGIN_STORE_URL` | Override marketplace catalog URL |
 | `permissions.api` | Per-plugin Somtoday path globs |
 | `nav.icon` | Lucide icon name rendered by host |
+| `vendor/cyfer-plugin-types` | Vendored copy of `cyfer-plugins/types` (edit upstream, then `npm run sync:plugin-types`) |
 
 ## Further Reading
 
