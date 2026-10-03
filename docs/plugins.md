@@ -164,6 +164,13 @@ Gebruik in eigen CSS of inline styles:
 Licht/donker volgt het host-thema (`data-theme` op `<html>`). Eigen CSS
 mag tokens overschrijven; doe dat spaarzaam.
 
+De authoring-bron van deze stylesheet staat in
+[`cyfer-plugins/styles`](https://github.com/Samhij/cyfer-plugins/tree/main/styles)
+(`plugin-base.css`). Open die repo-root in VS Code / Cursor voor autocomplete op
+`var(--…)` en helper-classes (via `.vscode/settings.json` + CSS/HTML custom data).
+Kopieer of `@import` de base styles **niet** in je plugin-zip — de host injecteert
+ze. De host houdt een vendored kopie bij (`npm run sync:plugin-styles`).
+
 Voorbeeld eigen stylesheet:
 
 ```css
@@ -181,13 +188,19 @@ Voorbeeld eigen stylesheet:
 }
 ```
 
-## TypeScript / autocomplete
+## TypeScript / CSS autocomplete
 
 Plugin-facing types (SDK, `PluginManifest`, Somtoday REST-vormen) leven in de
 marketplace-repo: [`cyfer-plugins/types`](https://github.com/Samhij/cyfer-plugins/tree/main/types).
-Open die repo in je editor voor autocomplete op `cyfers.*` en `Somtoday*` (via
-`jsconfig.json`). De host houdt een vendored kopie bij onder
-`vendor/cyfer-plugin-types/` (`npm run sync:plugin-types`).
+Base CSS tokens/helpers: [`cyfer-plugins/styles`](https://github.com/Samhij/cyfer-plugins/tree/main/styles).
+Open die **repo-root** in je editor voor:
+
+- `cyfers.*` / `Somtoday*` — `jsconfig.json` + `types/`
+- CSS-variabelen en helper-classes — `.vscode/settings.json` + `styles/*-custom-data.json`
+
+De host houdt vendored kopieën bij onder `vendor/cyfer-plugin-types/`
+(`npm run sync:plugin-types`) en `vendor/cyfer-plugin-styles/`
+(`npm run sync:plugin-styles`).
 
 ## SDK (`window.cyfers`)
 
