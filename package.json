@@ -18,7 +18,8 @@
     "pack:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
     "pack:win": "npm run build && electron-builder --win nsis --publish never",
     "pack:mac": "npm run build && electron-builder --mac dmg zip --universal --publish never",
-    "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
+    "sync:plugin-types": "node scripts/sync-plugin-types.js"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",

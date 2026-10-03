@@ -1,26 +1,7 @@
 import * as LucideIcons from "lucide-react";
+import type { PluginKind, PluginManifest, PluginNav } from "@/lib/types";
 
-export type PluginKind = "page" | "widget";
-
-export type PluginNav = {
-  label: string;
-  icon: string;
-  order: number;
-};
-
-export type PluginManifest = {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  author: string;
-  kind: PluginKind;
-  entry: string;
-  nav: PluginNav;
-  permissions: {
-    api: string[];
-  };
-};
+export type { PluginKind, PluginManifest, PluginNav };
 
 const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
