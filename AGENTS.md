@@ -23,12 +23,13 @@ Sessions are encrypted on disk under the app userData directory.
   - `app/api/plugins/` – Upload, list, enable, proxy, entry, static UI assets.
   - `app/api/{schools,method,login,session,logout}/` – Auth and school APIs.
 - `lib/` – Somtoday OAuth/session helpers and plugin registry.
-  - `lib/plugins/` – Manifest, allowlist match, disk registry, SDK rewrite, rate limit.
+  - `lib/plugins/` – Manifest, allowlist match, disk registry, SDK rewrite, base styles, rate limit.
   - `lib/somtoday.ts` – OAuth, exported `somFetch`, session/plugin context.
   - `lib/browser-sso.ts` – Calls Electron SSO bridge over localhost.
   - `lib/session.ts` – httpOnly cookie + encrypted file-backed token store.
 - `plugins/` – Local samples + thin ambient shim (`cyfers.d.ts`); published plugins live in `cyfer-plugins`.
 - `vendor/cyfer-plugin-types/` – Vendored plugin-facing types from `cyfer-plugins/types/` (source of truth).
+- `vendor/cyfer-plugin-styles/` – Vendored plugin base CSS from `cyfer-plugins/styles/` (source of truth).
 - `packaging/aur/cyfers-bin/` – AUR `cyfers-bin` PKGBUILD (manual pacman updates; not auto-published).
 - `docs/plugins.md` – Dutch author guide for zip plugins.
 - `next.config.ts`, `tsconfig.json`, `package.json` – tooling/config (electron-builder).
@@ -43,7 +44,8 @@ npm run pack:linux   # AppImage + deb
 npm run pack:win     # NSIS installer
 npm run pack:mac     # DMG + zip (updater)
 npm run typecheck
-npm run sync:plugin-types   # refresh vendor/ from sibling cyfer-plugins or GitHub
+npm run sync:plugin-types   # refresh vendor/types from sibling cyfer-plugins or GitHub
+npm run sync:plugin-styles  # refresh vendor/styles + embed into base-styles.ts
 ```
 
 Unsigned builds may trigger Gatekeeper (macOS) or SmartScreen (Windows); code signing is a
@@ -192,6 +194,7 @@ are intentionally out of scope for this change set.
 | `permissions.api` | Per-plugin Somtoday path globs |
 | `nav.icon` | Lucide icon name rendered by host |
 | `vendor/cyfer-plugin-types` | Vendored copy of `cyfer-plugins/types` (edit upstream, then `npm run sync:plugin-types`) |
+| `vendor/cyfer-plugin-styles` | Vendored copy of `cyfer-plugins/styles/plugin-base.css` (`npm run sync:plugin-styles`) |
 
 ## Further Reading
 
