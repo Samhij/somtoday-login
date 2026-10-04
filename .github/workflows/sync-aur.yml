@@ -1,0 +1,218 @@
+# Sync packaging/aur/cyfers-bin/ to the Arch AUR git remote.
+#
+# DISABLED BY DEFAULT — safe to merge. This workflow cannot run until Sam
+# removes the hard guard below. There is no push/release trigger.
+#
+# To enable later (Sam):
+# 1. Claim/create the AUR package and confirm the remote URL works.
+# 2. Set AUR_REMOTE in the "Configure AUR remote" step (replace the TODO URL
+#    if the package name differs).
+# 3. Add GitHub Actions secret AUR_SSH_PRIVATE_KEY = AUR account SSH private key
+#    (the matching public key must be uploaded at https://aur.archlinux.org/account/).
+# 4. Remove `if: false` on the sync-aur job (keep workflow_dispatch-only until
+#    you intentionally want automation on release).
+# 5. Run Actions → "Sync AUR cyfers-bin" → Run workflow.
+#
+# Required secret: AUR_SSH_PRIVATE_KEY
+
+name: Sync AUR cyfers-bin
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional pkgver override (default: latest GitHub release, without leading v)"
+        required: false
+        type: string
+      pkgrel:
+        description: "Optional pkgrel override (default: 1 for a new pkgver, else bump)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync-aur:
+    # HARD DISABLE — remove this entire `if: false` line to allow manual runs.
+    if: false
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout somtoday-login
+        uses: actions/checkout@v4
+
+      - name: Configure AUR remote
+        id: aur
+        run: |
+          # TODO(Sam): replace when the AUR package exists / name is finalized.
+          # Expected shape (from packaging/aur/cyfers-bin/README.md):
+          AUR_REMOTE="ssh://aur@aur.archlinux.org/cyfers-bin.git"
+          echo "remote=${AUR_REMOTE}" >> "$GITHUB_OUTPUT"
+          echo "Using AUR remote: ${AUR_REMOTE}"
+
+      - name: Resolve target version
+        id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${INPUT_VERSION}" ]]; then
+            VERSION="${INPUT_VERSION#v}"
+          else
+            TAG="$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName -q .tagName)"
+            VERSION="${TAG#v}"
+          fi
+          if [[ -z "${VERSION}" ]]; then
+            echo "Could not resolve a release version." >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
+
+      - name: Download AppImage and compute sha256sums
+        id: sums
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          PKG_DIR="packaging/aur/cyfers-bin"
+          APPIMAGE="Cyfers-${VERSION}.AppImage"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${APPIMAGE}"
+
+          curl -fsSL -o "/tmp/${APPIMAGE}" "${URL}"
+          APP_SHA="$(sha256sum "/tmp/${APPIMAGE}" | awk '{print $1}')"
+          DESKTOP_SHA="$(sha256sum "${PKG_DIR}/cyfers.desktop" | awk '{print $1}')"
+          SH_SHA="$(sha256sum "${PKG_DIR}/cyfers.sh" | awk '{print $1}')"
+
+          echo "app=${APP_SHA}" >> "$GITHUB_OUTPUT"
+          echo "desktop=${DESKTOP_SHA}" >> "$GITHUB_OUTPUT"
+          echo "sh=${SH_SHA}" >> "$GITHUB_OUTPUT"
+          echo "AppImage sha256: ${APP_SHA}"
+
+      - name: Update PKGBUILD pkgver / pkgrel / sha256sums
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          INPUT_PKGREL: ${{ inputs.pkgrel }}
+          APP_SHA: ${{ steps.sums.outputs.app }}
+          DESKTOP_SHA: ${{ steps.sums.outputs.desktop }}
+          SH_SHA: ${{ steps.sums.outputs.sh }}
+        run: |
+          set -euo pipefail
+          PKGBUILD="packaging/aur/cyfers-bin/PKGBUILD"
+          OLD_VER="$(sed -n 's/^pkgver=//p' "${PKGBUILD}" | head -1)"
+          OLD_REL="$(sed -n 's/^pkgrel=//p' "${PKGBUILD}" | head -1)"
+
+          if [[ -n "${INPUT_PKGREL}" ]]; then
+            NEW_REL="${INPUT_PKGREL}"
+          elif [[ "${OLD_VER}" == "${VERSION}" ]]; then
+            NEW_REL="$((OLD_REL + 1))"
+          else
+            NEW_REL="1"
+          fi
+
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" "${PKGBUILD}"
+          sed -i "s/^pkgrel=.*/pkgrel=${NEW_REL}/" "${PKGBUILD}"
+
+          # Replace the three sha256sums entries in order (AppImage, desktop, sh).
+          python3 - <<'PY'
+          import os, pathlib, re
+          path = pathlib.Path("packaging/aur/cyfers-bin/PKGBUILD")
+          text = path.read_text()
+          sums = [
+              os.environ["APP_SHA"],
+              os.environ["DESKTOP_SHA"],
+              os.environ["SH_SHA"],
+          ]
+          pattern = r"sha256sums=\(\s*(?:'[^']*'\s*)+\)"
+          replacement = (
+              "sha256sums=(\n"
+              + "".join(f"  '{s}'\n" for s in sums)
+              + ")"
+          )
+          new_text, n = re.subn(pattern, replacement, text, count=1)
+          if n != 1:
+              raise SystemExit("Failed to rewrite sha256sums=() in PKGBUILD")
+          path.write_text(new_text)
+          PY
+
+          {
+            echo "pkgver=${VERSION}"
+            echo "pkgrel=${NEW_REL}"
+          } >> "$GITHUB_ENV"
+          echo "Updated PKGBUILD → pkgver=${VERSION} pkgrel=${NEW_REL}"
+
+      - name: Regenerate .SRCINFO with makepkg
+        run: |
+          set -euo pipefail
+          # Ubuntu runners have no makepkg; use a short-lived Arch container.
+          # --printsrcinfo only parses PKGBUILD (no AppImage download needed).
+          docker run --rm \
+            -v "${PWD}/packaging/aur/cyfers-bin:/pkg" \
+            -w /pkg \
+            archlinux:latest \
+            bash -c '
+              set -euo pipefail
+              pacman -Sy --noconfirm archlinux-keyring
+              pacman -Sy --noconfirm base-devel
+              makepkg --printsrcinfo > .SRCINFO
+            '
+          echo "Regenerated packaging/aur/cyfers-bin/.SRCINFO"
+          head -n 8 packaging/aur/cyfers-bin/.SRCINFO
+
+      - name: Install AUR SSH key
+        env:
+          # Placeholder secret name — create this in repo Settings → Secrets.
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${AUR_SSH_PRIVATE_KEY}" ]]; then
+            echo "Missing secret AUR_SSH_PRIVATE_KEY. Add the AUR SSH private key in repo secrets." >&2
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${AUR_SSH_PRIVATE_KEY}" > ~/.ssh/aur_key
+          chmod 600 ~/.ssh/aur_key
+          ssh-keyscan -t ed25519,rsa aur.archlinux.org >> ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<'EOF'
+          Host aur.archlinux.org
+            User aur
+            IdentityFile ~/.ssh/aur_key
+            StrictHostKeyChecking yes
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Clone AUR package repo and push
+        env:
+          AUR_REMOTE: ${{ steps.aur.outputs.remote }}
+        run: |
+          set -euo pipefail
+          SRC="packaging/aur/cyfers-bin"
+          DEST="$(mktemp -d)/cyfers-bin"
+
+          git clone "${AUR_REMOTE}" "${DEST}"
+          # AUR packages typically ship only PKGBUILD + .SRCINFO + local sources.
+          # Do not copy README.md (repo-local author notes).
+          cp "${SRC}/PKGBUILD" "${SRC}/.SRCINFO" "${SRC}/cyfers.desktop" "${SRC}/cyfers.sh" "${DEST}/"
+
+          cd "${DEST}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO cyfers.desktop cyfers.sh
+
+          if git diff --cached --quiet; then
+            echo "AUR tree already up to date for ${pkgver}-${pkgrel}; nothing to push."
+            exit 0
+          fi
+
+          git commit -m "Update to ${pkgver}-${pkgrel}"
+          # AUR package repos use master.
+          git push origin HEAD:master
+          echo "Pushed cyfers-bin ${pkgver}-${pkgrel} to AUR."
