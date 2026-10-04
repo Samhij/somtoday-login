@@ -356,7 +356,9 @@ h2 {
 }
 
 .fade-in {
-  animation: rise 420ms ease both;
+  /* backwards only — forwards would leave transform on .app-shell and break
+     position:fixed overlays (marketplace) by making them page-relative. */
+  animation: rise 420ms ease backwards;
 }
 
 @keyframes rise {

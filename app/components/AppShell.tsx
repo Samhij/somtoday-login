@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { GraduationCap, Puzzle, Settings2 } from "lucide-react";
 import { OverviewPage } from "@/app/components/OverviewPage";
 import { PluginFrame } from "@/app/components/PluginFrame";
@@ -778,121 +779,126 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
         </section>
       </div>
 
-      {storeOpen ? (
-        <div className="modal-root" role="presentation">
-          <button
-            type="button"
-            className="modal-backdrop"
-            aria-label="Marketplace sluiten"
-            onClick={closeStore}
-          />
-          <div
-            className="modal-panel marketplace-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="marketplace-title"
-          >
-            <div className="modal-head">
-              <div>
-                <h2 id="marketplace-title">Marketplace</h2>
-                <p className="meta">
-                  Community-plugins van{" "}
-                  <a
-                    href="https://github.com/Samhij/cyfer-plugins"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    cyfer-plugins
-                  </a>
-                  {storeUpdatedAt
-                    ? ` · catalogus ${new Date(storeUpdatedAt).toLocaleDateString("nl-NL")}`
-                    : ""}
-                  .
-                </p>
-              </div>
-              <div className="modal-head-actions">
-                <button
-                  className="ghost"
-                  type="button"
-                  onClick={() => void loadStore()}
-                  disabled={storeLoading || installBusy}
-                >
-                  {storeLoading ? "Laden…" : "Vernieuwen"}
-                </button>
-                <button
-                  className="ghost"
-                  type="button"
-                  onClick={closeStore}
-                  disabled={installBusy}
-                >
-                  Sluiten
-                </button>
-              </div>
-            </div>
+      {storeOpen
+        ? createPortal(
+            <div className="modal-root" role="presentation">
+              <button
+                type="button"
+                className="modal-backdrop"
+                aria-label="Marketplace sluiten"
+                onClick={closeStore}
+              />
+              <div
+                className="modal-panel marketplace-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="marketplace-title"
+              >
+                <div className="modal-head">
+                  <div>
+                    <h2 id="marketplace-title">Marketplace</h2>
+                    <p className="meta">
+                      Community-plugins van{" "}
+                      <a
+                        href="https://github.com/Samhij/cyfer-plugins"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        cyfer-plugins
+                      </a>
+                      {storeUpdatedAt
+                        ? ` · catalogus ${new Date(storeUpdatedAt).toLocaleDateString("nl-NL")}`
+                        : ""}
+                      .
+                    </p>
+                  </div>
+                  <div className="modal-head-actions">
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={() => void loadStore()}
+                      disabled={storeLoading || installBusy}
+                    >
+                      {storeLoading ? "Laden…" : "Vernieuwen"}
+                    </button>
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={closeStore}
+                      disabled={installBusy}
+                    >
+                      Sluiten
+                    </button>
+                  </div>
+                </div>
 
-            <div className="modal-body">
-              {storeError ? <p className="error">{storeError}</p> : null}
-              {storeLoading && storePlugins.length === 0 ? (
-                <p className="meta">Catalogus laden…</p>
-              ) : null}
-              {!storeLoading && !storeError && storePlugins.length === 0 ? (
-                <p className="meta">Nog geen plugins in de catalogus.</p>
-              ) : null}
-              <ul className="plugin-list">
-                {storePlugins.map((entry) => {
-                  const Icon = resolvePluginIcon(entry.nav.icon) || Puzzle;
-                  const busy = installingId === entry.id;
-                  let actionLabel = "Installeren";
-                  if (entry.updateAvailable) actionLabel = "Bijwerken";
-                  else if (entry.installed) actionLabel = "Opnieuw installeren";
-                  return (
-                    <li key={entry.id} className="plugin-row">
-                      <div className="store-plugin-main">
-                        <div className="store-plugin-title">
-                          <Icon size={18} strokeWidth={2} aria-hidden />
-                          <strong>{entry.name}</strong>
-                        </div>
-                        <p className="meta">
-                          {entry.kind === "widget" ? "Widget" : "Pagina"} · v{entry.version}
-                          {entry.author ? ` · ${entry.author}` : ""}
-                          {entry.installed
-                            ? entry.updateAvailable
-                              ? ` · geïnstalleerd v${entry.installedVersion}`
-                              : " · geïnstalleerd"
-                            : ""}
-                        </p>
-                        {entry.description ? <p className="meta">{entry.description}</p> : null}
-                        {entry.permissions.api.length > 0 ? (
-                          <p className="meta store-perms">API: {entry.permissions.api.join(", ")}</p>
-                        ) : null}
-                      </div>
-                      <div className="plugin-actions">
-                        <button
-                          className="primary"
-                          type="button"
-                          disabled={busy || installBusy}
-                          onClick={() => void installFromStore(entry)}
-                        >
-                          {busy ? "Bezig…" : actionLabel}
-                        </button>
-                        {entry.sourceUrl ? (
-                          <button
-                            className="ghost"
-                            type="button"
-                            onClick={() => window.open(entry.sourceUrl, "_blank", "noopener,noreferrer")}
-                          >
-                            Bron
-                          </button>
-                        ) : null}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        </div>
-      ) : null}
+                <div className="modal-body">
+                  {storeError ? <p className="error">{storeError}</p> : null}
+                  {storeLoading && storePlugins.length === 0 ? (
+                    <p className="meta">Catalogus laden…</p>
+                  ) : null}
+                  {!storeLoading && !storeError && storePlugins.length === 0 ? (
+                    <p className="meta">Nog geen plugins in de catalogus.</p>
+                  ) : null}
+                  <ul className="plugin-list">
+                    {storePlugins.map((entry) => {
+                      const Icon = resolvePluginIcon(entry.nav.icon) || Puzzle;
+                      const busy = installingId === entry.id;
+                      let actionLabel = "Installeren";
+                      if (entry.updateAvailable) actionLabel = "Bijwerken";
+                      else if (entry.installed) actionLabel = "Opnieuw installeren";
+                      return (
+                        <li key={entry.id} className="plugin-row">
+                          <div className="store-plugin-main">
+                            <div className="store-plugin-title">
+                              <Icon size={18} strokeWidth={2} aria-hidden />
+                              <strong>{entry.name}</strong>
+                            </div>
+                            <p className="meta">
+                              {entry.kind === "widget" ? "Widget" : "Pagina"} · v{entry.version}
+                              {entry.author ? ` · ${entry.author}` : ""}
+                              {entry.installed
+                                ? entry.updateAvailable
+                                  ? ` · geïnstalleerd v${entry.installedVersion}`
+                                  : " · geïnstalleerd"
+                                : ""}
+                            </p>
+                            {entry.description ? <p className="meta">{entry.description}</p> : null}
+                            {entry.permissions.api.length > 0 ? (
+                              <p className="meta store-perms">API: {entry.permissions.api.join(", ")}</p>
+                            ) : null}
+                          </div>
+                          <div className="plugin-actions">
+                            <button
+                              className="primary"
+                              type="button"
+                              disabled={busy || installBusy}
+                              onClick={() => void installFromStore(entry)}
+                            >
+                              {busy ? "Bezig…" : actionLabel}
+                            </button>
+                            {entry.sourceUrl ? (
+                              <button
+                                className="ghost"
+                                type="button"
+                                onClick={() =>
+                                  window.open(entry.sourceUrl, "_blank", "noopener,noreferrer")
+                                }
+                              >
+                                Bron
+                              </button>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
