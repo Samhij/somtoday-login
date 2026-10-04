@@ -296,6 +296,16 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
 
   const pluginUpdateCount = outdatedStorePlugins.length;
 
+  const marketplaceAvailableCount = useMemo(
+    () => storePlugins.filter((entry) => !entry.installed).length,
+    [storePlugins],
+  );
+
+  const outdatedById = useMemo(
+    () => new Set(outdatedStorePlugins.map((entry) => entry.id)),
+    [outdatedStorePlugins],
+  );
+
   async function togglePlugin(id: string, enabledNext: boolean) {
     setError(null);
     const response = await fetch(`/api/plugins/${encodeURIComponent(id)}`, {
@@ -579,23 +589,272 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
 
           {active === "__manage__" ? (
             <div className="manage">
-              <h1>Plugins</h1>
-              <p className="lede">
-                Beheer je geïnstalleerde plugins of open de marketplace. Pagina-plugins komen in de
-                zijbalk; widgets alleen op Overzicht.
-              </p>
-              {appVersion ? <p className="meta app-version">Cyfers v{appVersion}</p> : null}
+              <header className="manage-hero">
+                <h1>Plugins</h1>
+                <p className="lede">
+                  Geïnstalleerde plugins beheren, updates zien, of iets nieuws uit de marketplace
+                  installeren. Pagina-plugins komen in de zijbalk; widgets alleen op Overzicht.
+                </p>
+                {appVersion ? <p className="meta app-version">Cyfers v{appVersion}</p> : null}
+              </header>
 
-              <div className="manage-toolbar">
+              <div className="manage-summary">
+                <ul className="manage-stats" aria-label="Pluginoverzicht">
+                  <li>
+                    <strong>{plugins.length}</strong>
+                    <span>geïnstalleerd</span>
+                  </li>
+                  <li className={pluginUpdateCount > 0 ? "manage-stat-alert" : undefined}>
+                    <strong>{pluginUpdateCount}</strong>
+                    <span>{pluginUpdateCount === 1 ? "update" : "updates"}</span>
+                  </li>
+                  <li>
+                    <strong>{marketplaceAvailableCount}</strong>
+                    <span>nieuw in store</span>
+                  </li>
+                  {devAvailable ? (
+                    <li>
+                      <strong>{devPlugins.length}</strong>
+                      <span>ontwikkeling</span>
+                    </li>
+                  ) : null}
+                </ul>
                 <button className="primary" type="button" onClick={openStore}>
                   Marketplace openen
                 </button>
               </div>
 
-              {devAvailable ? (
-                <section className="manage-section">
+              {storeError && !storeOpen ? <p className="error">{storeError}</p> : null}
+
+              {pluginUpdateCount > 0 ? (
+                <section className="manage-section manage-section-updates" aria-labelledby="updates-heading">
                   <div className="manage-section-head">
-                    <h2>Ontwikkeling</h2>
+                    <div className="manage-section-titles">
+                      <h2 id="updates-heading">Updates beschikbaar</h2>
+                      <p className="meta">
+                        {pluginUpdateCount === 1
+                          ? "Er is 1 nieuwere catalogusversie."
+                          : `Er zijn ${pluginUpdateCount} nieuwere catalogusversies.`}{" "}
+                        Aan/uit blijft behouden bij bijwerken.
+                      </p>
+                    </div>
+                    {pluginUpdateCount > 1 ? (
+                      <button
+                        className="primary"
+                        type="button"
+                        disabled={installBusy}
+                        onClick={() => void updateAllPlugins()}
+                      >
+                        {bulkUpdating ? "Bezig…" : "Alles bijwerken"}
+                      </button>
+                    ) : null}
+                  </div>
+                  <ul className="plugin-list">
+                    {outdatedStorePlugins.map((entry) => {
+                      const busy = installingId === entry.id;
+                      const Icon = resolvePluginIcon(entry.nav.icon) || Puzzle;
+                      return (
+                        <li key={entry.id} className="plugin-row">
+                          <div className="plugin-main">
+                            <div className="plugin-title-row">
+                              <Icon size={18} strokeWidth={2} aria-hidden />
+                              <strong>{entry.name}</strong>
+                            </div>
+                            <div className="plugin-status" aria-label="Status">
+                              <span className="status-chip">
+                                {entry.kind === "widget" ? "Widget" : "Pagina"}
+                              </span>
+                              <span className="status-chip">
+                                v{entry.installedVersion ?? "?"} → v{entry.version}
+                              </span>
+                              <span className="status-chip status-chip-update">Update</span>
+                            </div>
+                            {entry.description ? <p className="meta">{entry.description}</p> : null}
+                          </div>
+                          <div className="plugin-actions">
+                            <button
+                              className="primary"
+                              type="button"
+                              disabled={installBusy}
+                              onClick={() => void installFromStore(entry)}
+                            >
+                              {busy ? "Bezig…" : "Bijwerken"}
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ) : null}
+
+              <section className="manage-section" aria-labelledby="installed-heading">
+                <div className="manage-section-head">
+                  <div className="manage-section-titles">
+                    <h2 id="installed-heading">Geïnstalleerd</h2>
+                    <p className="meta">Zet plugins aan of uit, of verwijder ze. Updates staan hierboven.</p>
+                  </div>
+                  <span className="manage-count" aria-hidden>
+                    {plugins.length}
+                  </span>
+                </div>
+
+                <details className="upload-details">
+                  <summary>Eigen plugin-zip uploaden</summary>
+                  <form className="upload-form" onSubmit={(event) => void onUpload(event)}>
+                    <label htmlFor="plugin-file">Zip-bestand (max. 2 MB)</label>
+                    <input
+                      id="plugin-file"
+                      name="file"
+                      type="file"
+                      accept=".zip,application/zip"
+                      required
+                    />
+                    <button className="primary" type="submit" disabled={uploading}>
+                      {uploading ? "Bezig…" : "Uploaden"}
+                    </button>
+                  </form>
+                </details>
+
+                {plugins.length === 0 ? (
+                  <p className="empty manage-empty">
+                    Nog geen plugins geïnstalleerd. Open de marketplace of upload een zip.
+                  </p>
+                ) : (
+                  <ul className="plugin-list">
+                    {plugins.map((plugin) => {
+                      const listing = storeById.get(plugin.id);
+                      const updateAvailable = outdatedById.has(plugin.id);
+                      const Icon = resolvePluginIcon(plugin.nav.icon) || Puzzle;
+                      return (
+                        <li
+                          key={plugin.id}
+                          className={
+                            plugin.enabled ? "plugin-row" : "plugin-row plugin-row-disabled"
+                          }
+                        >
+                          <div className="plugin-main">
+                            <div className="plugin-title-row">
+                              <Icon size={18} strokeWidth={2} aria-hidden />
+                              <strong>{plugin.name}</strong>
+                            </div>
+                            <div className="plugin-status" aria-label="Status">
+                              <span
+                                className={
+                                  plugin.enabled
+                                    ? "status-chip status-chip-on"
+                                    : "status-chip status-chip-off"
+                                }
+                              >
+                                {plugin.enabled ? "Aan" : "Uit"}
+                              </span>
+                              <span className="status-chip">
+                                {(plugin.kind ?? "page") === "widget" ? "Widget" : "Pagina"}
+                              </span>
+                              <span className="status-chip">v{plugin.version}</span>
+                              {updateAvailable && listing ? (
+                                <span className="status-chip status-chip-update">
+                                  Update v{listing.version}
+                                </span>
+                              ) : null}
+                              {plugin.devPreview ? (
+                                <span className="status-chip">Voorbeeld</span>
+                              ) : null}
+                              {plugin.builtin ? (
+                                <span className="status-chip">Ingebouwd</span>
+                              ) : null}
+                              {plugin.author ? (
+                                <span className="status-chip status-chip-quiet">{plugin.author}</span>
+                              ) : null}
+                            </div>
+                            {plugin.description ? (
+                              <p className="meta">{plugin.description}</p>
+                            ) : null}
+                          </div>
+                          <div className="plugin-actions">
+                            <label className="switch">
+                              <input
+                                type="checkbox"
+                                checked={plugin.enabled}
+                                onChange={(event) =>
+                                  void togglePlugin(plugin.id, event.target.checked)
+                                }
+                              />
+                              <span>{plugin.enabled ? "Aan" : "Uit"}</span>
+                            </label>
+                            {plugin.devPreview ? (
+                              <button
+                                className="ghost"
+                                type="button"
+                                disabled={Boolean(devLoadingId)}
+                                onClick={() => void loadOrReloadDevPlugin(plugin.id, "reload")}
+                              >
+                                {devLoadingId === plugin.id ? "Bezig…" : "Herladen"}
+                              </button>
+                            ) : null}
+                            {plugin.removable ? (
+                              <button
+                                className="ghost"
+                                type="button"
+                                onClick={() => void remove(plugin.id, plugin.name)}
+                              >
+                                Verwijderen
+                              </button>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              <section className="manage-section manage-section-store" aria-labelledby="store-heading">
+                <div className="manage-section-head">
+                  <div className="manage-section-titles">
+                    <h2 id="store-heading">Marketplace</h2>
+                    <p className="meta">
+                      Community-plugins van{" "}
+                      <a
+                        href="https://github.com/Samhij/cyfer-plugins"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        cyfer-plugins
+                      </a>
+                      {storeUpdatedAt
+                        ? ` · catalogus ${new Date(storeUpdatedAt).toLocaleDateString("nl-NL")}`
+                        : ""}
+                      .
+                    </p>
+                  </div>
+                  <button className="primary" type="button" onClick={openStore}>
+                    Openen
+                  </button>
+                </div>
+                <p className="meta manage-store-summary">
+                  {storeLoading && storePlugins.length === 0
+                    ? "Catalogus laden…"
+                    : storePlugins.length === 0
+                      ? "Nog geen plugins in de catalogus."
+                      : `${marketplaceAvailableCount} nieuw te installeren · ${storePlugins.length - marketplaceAvailableCount} al geïnstalleerd${
+                          pluginUpdateCount > 0
+                            ? ` · ${pluginUpdateCount} update${pluginUpdateCount === 1 ? "" : "s"}`
+                            : ""
+                        }.`}
+                </p>
+              </section>
+
+              {devAvailable ? (
+                <section className="manage-section" aria-labelledby="dev-heading">
+                  <div className="manage-section-head">
+                    <div className="manage-section-titles">
+                      <h2 id="dev-heading">Ontwikkeling</h2>
+                      <p className="meta">
+                        Unpacked plugins uit <code className="dev-path">{devRoot}</code>. Laden
+                        koppelt ze zonder zip; wijzigingen worden herladen (of klik Herladen).
+                      </p>
+                    </div>
                     <button
                       className="ghost"
                       type="button"
@@ -605,35 +864,57 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                       Vernieuwen
                     </button>
                   </div>
-                  <p className="meta">
-                    Unpacked plugins uit{" "}
-                    <code className="dev-path">{devRoot}</code>. Laden koppelt ze zonder zip;
-                    wijzigingen worden herladen (of klik Herladen).
-                  </p>
                   {devPlugins.length === 0 ? (
                     <p className="meta">Geen geldige pluginmappen gevonden.</p>
                   ) : (
                     <ul className="plugin-list">
                       {devPlugins.map((entry) => {
                         const busy = devLoadingId === entry.id;
+                        const Icon = resolvePluginIcon(entry.nav.icon) || Puzzle;
                         return (
                           <li key={entry.id} className="plugin-row">
-                            <div>
-                              <strong>{entry.name}</strong>
-                              <p className="meta">
-                                {(entry.kind ?? "page") === "widget" ? "Widget" : "Pagina"} ·{" "}
-                                {entry.nav.label} · v{entry.version}
-                                {entry.loaded
-                                  ? ` · geladen${entry.linkMode === "symlink" ? " (link)" : entry.linkMode === "copy" ? " (kopie)" : ""}`
-                                  : " · niet geladen"}
-                                {entry.author ? ` · ${entry.author}` : ""}
-                              </p>
-                              {entry.description ? <p className="meta">{entry.description}</p> : null}
+                            <div className="plugin-main">
+                              <div className="plugin-title-row">
+                                <Icon size={18} strokeWidth={2} aria-hidden />
+                                <strong>{entry.name}</strong>
+                              </div>
+                              <div className="plugin-status" aria-label="Status">
+                                <span
+                                  className={
+                                    entry.loaded
+                                      ? "status-chip status-chip-on"
+                                      : "status-chip status-chip-off"
+                                  }
+                                >
+                                  {entry.loaded ? "Geladen" : "Niet geladen"}
+                                </span>
+                                <span className="status-chip">
+                                  {(entry.kind ?? "page") === "widget" ? "Widget" : "Pagina"}
+                                </span>
+                                <span className="status-chip">v{entry.version}</span>
+                                {entry.loaded && entry.linkMode === "symlink" ? (
+                                  <span className="status-chip status-chip-quiet">Link</span>
+                                ) : null}
+                                {entry.loaded && entry.linkMode === "copy" ? (
+                                  <span className="status-chip status-chip-quiet">Kopie</span>
+                                ) : null}
+                                {entry.loaded && entry.enabled === false ? (
+                                  <span className="status-chip status-chip-off">Uit</span>
+                                ) : null}
+                                {entry.author ? (
+                                  <span className="status-chip status-chip-quiet">
+                                    {entry.author}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {entry.description ? (
+                                <p className="meta">{entry.description}</p>
+                              ) : null}
                             </div>
                             <div className="plugin-actions">
                               {entry.loaded ? (
                                 <button
-                                  className="primary"
+                                  className="ghost"
                                   type="button"
                                   disabled={Boolean(devLoadingId)}
                                   onClick={() => void loadOrReloadDevPlugin(entry.id, "reload")}
@@ -658,100 +939,6 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                   )}
                 </section>
               ) : null}
-
-              <section className="manage-section">
-                <div className="manage-section-head">
-                  <h2>Geïnstalleerd</h2>
-                  {pluginUpdateCount > 1 ? (
-                    <button
-                      className="primary"
-                      type="button"
-                      disabled={installBusy}
-                      onClick={() => void updateAllPlugins()}
-                    >
-                      {bulkUpdating ? "Bezig…" : "Alles bijwerken"}
-                    </button>
-                  ) : null}
-                </div>
-                <p className="meta">
-                  Geïnstalleerde plugins kun je uitzetten of verwijderen.
-                  {pluginUpdateCount > 0
-                    ? ` ${pluginUpdateCount} update${pluginUpdateCount === 1 ? "" : "s"} beschikbaar.`
-                    : ""}
-                </p>
-                {storeError && !storeOpen ? <p className="error">{storeError}</p> : null}
-
-                <form className="upload-form" onSubmit={(event) => void onUpload(event)}>
-                  <label htmlFor="plugin-file">Eigen plugin-zip</label>
-                  <input id="plugin-file" name="file" type="file" accept=".zip,application/zip" required />
-                  <button className="primary" type="submit" disabled={uploading}>
-                    {uploading ? "Bezig…" : "Uploaden"}
-                  </button>
-                </form>
-
-                <ul className="plugin-list">
-                  {plugins.map((plugin) => {
-                    const listing = storeById.get(plugin.id);
-                    const updateAvailable = Boolean(listing?.updateAvailable);
-                    const busy = installingId === plugin.id;
-                    return (
-                      <li key={plugin.id} className="plugin-row">
-                        <div>
-                          <strong>{plugin.name}</strong>
-                          <p className="meta">
-                            {(plugin.kind ?? "page") === "widget" ? "Widget" : "Pagina"} · {plugin.nav.label} · v
-                            {plugin.version}
-                            {updateAvailable && listing ? ` · update v${listing.version}` : ""}
-                            {plugin.devPreview ? " · voorbeeld" : ""}
-                            {plugin.builtin ? " · ingebouwd" : ""}
-                            {plugin.author ? ` · ${plugin.author}` : ""}
-                          </p>
-                          {plugin.description ? <p className="meta">{plugin.description}</p> : null}
-                        </div>
-                        <div className="plugin-actions">
-                          {updateAvailable && listing ? (
-                            <button
-                              className="primary"
-                              type="button"
-                              disabled={installBusy}
-                              onClick={() => void installFromStore(listing)}
-                            >
-                              {busy ? "Bezig…" : "Bijwerken"}
-                            </button>
-                          ) : null}
-                          <label className="switch">
-                            <input
-                              type="checkbox"
-                              checked={plugin.enabled}
-                              onChange={(event) => void togglePlugin(plugin.id, event.target.checked)}
-                            />
-                            <span>{plugin.enabled ? "Aan" : "Uit"}</span>
-                          </label>
-                          {plugin.devPreview ? (
-                            <button
-                              className="ghost"
-                              type="button"
-                              disabled={Boolean(devLoadingId)}
-                              onClick={() => void loadOrReloadDevPlugin(plugin.id, "reload")}
-                            >
-                              {devLoadingId === plugin.id ? "Bezig…" : "Herladen"}
-                            </button>
-                          ) : null}
-                          {plugin.removable ? (
-                            <button
-                              className="ghost"
-                              type="button"
-                              onClick={() => void remove(plugin.id, plugin.name)}
-                            >
-                              Verwijderen
-                            </button>
-                          ) : null}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
             </div>
           ) : null}
 
@@ -844,33 +1031,47 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                     {storePlugins.map((entry) => {
                       const Icon = resolvePluginIcon(entry.nav.icon) || Puzzle;
                       const busy = installingId === entry.id;
+                      const isPrimaryInstall =
+                        !entry.installed || Boolean(entry.updateAvailable);
                       let actionLabel = "Installeren";
                       if (entry.updateAvailable) actionLabel = "Bijwerken";
                       else if (entry.installed) actionLabel = "Opnieuw installeren";
                       return (
                         <li key={entry.id} className="plugin-row">
-                          <div className="store-plugin-main">
-                            <div className="store-plugin-title">
+                          <div className="store-plugin-main plugin-main">
+                            <div className="store-plugin-title plugin-title-row">
                               <Icon size={18} strokeWidth={2} aria-hidden />
                               <strong>{entry.name}</strong>
                             </div>
-                            <p className="meta">
-                              {entry.kind === "widget" ? "Widget" : "Pagina"} · v{entry.version}
-                              {entry.author ? ` · ${entry.author}` : ""}
-                              {entry.installed
-                                ? entry.updateAvailable
-                                  ? ` · geïnstalleerd v${entry.installedVersion}`
-                                  : " · geïnstalleerd"
-                                : ""}
-                            </p>
+                            <div className="plugin-status" aria-label="Status">
+                              <span className="status-chip">
+                                {entry.kind === "widget" ? "Widget" : "Pagina"}
+                              </span>
+                              <span className="status-chip">v{entry.version}</span>
+                              {entry.installed ? (
+                                <span className="status-chip status-chip-on">Geïnstalleerd</span>
+                              ) : (
+                                <span className="status-chip">Niet geïnstalleerd</span>
+                              )}
+                              {entry.updateAvailable ? (
+                                <span className="status-chip status-chip-update">
+                                  Update vanaf v{entry.installedVersion}
+                                </span>
+                              ) : null}
+                              {entry.author ? (
+                                <span className="status-chip status-chip-quiet">{entry.author}</span>
+                              ) : null}
+                            </div>
                             {entry.description ? <p className="meta">{entry.description}</p> : null}
                             {entry.permissions.api.length > 0 ? (
-                              <p className="meta store-perms">API: {entry.permissions.api.join(", ")}</p>
+                              <p className="meta store-perms">
+                                API: {entry.permissions.api.join(", ")}
+                              </p>
                             ) : null}
                           </div>
                           <div className="plugin-actions">
                             <button
-                              className="primary"
+                              className={isPrimaryInstall ? "primary" : "ghost"}
                               type="button"
                               disabled={busy || installBusy}
                               onClick={() => void installFromStore(entry)}
