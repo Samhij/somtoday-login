@@ -22,8 +22,6 @@ export type PluginCatalog = {
   plugins: StorePlugin[];
 };
 
-const DEFAULT_CATALOG_URL =
-  "https://raw.githubusercontent.com/Samhij/cyfer-plugins/main/catalog.json";
 const DEFAULT_REPO = "Samhij/cyfer-plugins";
 const DEFAULT_REF = "main";
 const MAX_ZIP_BYTES = 2 * 1024 * 1024;
@@ -35,10 +33,6 @@ const ALLOWED_DOWNLOAD_HOSTS = new Set([
   "objects.githubusercontent.com",
   "codeload.github.com",
 ]);
-
-function catalogUrl() {
-  return process.env.CYFERS_PLUGIN_STORE_URL?.trim() || DEFAULT_CATALOG_URL;
-}
 
 function storeRepo() {
   const raw = process.env.CYFERS_PLUGIN_STORE_REPO?.trim() || DEFAULT_REPO;
@@ -121,16 +115,45 @@ function parseCatalog(raw: unknown): PluginCatalog {
   };
 }
 
+/**
+ * Load marketplace catalog.
+ *
+ * Default: GitHub Contents API (`application/vnd.github.raw`) for
+ * `CYFERS_PLUGIN_STORE_REPO` / `CYFERS_PLUGIN_STORE_REF`.
+ * raw.githubusercontent.com Fastly ignores query-string cache busters and can
+ * serve a stale catalog for up to max-age=300 after a push — so the API is the
+ * primary path. On API failure, fall back to raw (may briefly lag).
+ *
+ * Override: `CYFERS_PLUGIN_STORE_URL` still fetches that URL directly (no-store).
+ */
 export async function fetchPluginCatalog(): Promise<PluginCatalog> {
-  // Bust raw.githubusercontent.com CDN (max-age=300); gzip/identity can diverge after push.
-  const url = new URL(catalogUrl());
-  url.searchParams.set("_", String(Math.floor(Date.now() / 60_000)));
-  const response = await fetchWithTimeout(url.toString());
-  if (!response.ok) {
-    throw new Error(`Catalogus laden mislukt (${response.status}).`);
+  const override = process.env.CYFERS_PLUGIN_STORE_URL?.trim();
+  if (override) {
+    const response = await fetchWithTimeout(override);
+    if (!response.ok) {
+      throw new Error(`Catalogus laden mislukt (${response.status}).`);
+    }
+    return parseCatalog((await response.json()) as unknown);
   }
-  const json = (await response.json()) as unknown;
-  return parseCatalog(json);
+
+  const { owner, repo } = storeRepo();
+  const ref = storeRef();
+  const apiUrl =
+    `https://api.github.com/repos/${owner}/${repo}/contents/catalog.json` +
+    `?ref=${encodeURIComponent(ref)}`;
+  const apiResponse = await fetchWithTimeout(apiUrl, {
+    headers: { accept: "application/vnd.github.raw" },
+  });
+  if (apiResponse.ok) {
+    return parseCatalog((await apiResponse.json()) as unknown);
+  }
+
+  const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/catalog.json`;
+  const rawResponse = await fetchWithTimeout(rawUrl);
+  if (!rawResponse.ok) {
+    throw new Error(`Catalogus laden mislukt (${apiResponse.status}).`);
+  }
+  return parseCatalog((await rawResponse.json()) as unknown);
 }
 
 export function findStorePlugin(catalog: PluginCatalog, id: string): StorePlugin | null {
