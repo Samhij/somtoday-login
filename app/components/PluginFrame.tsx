@@ -20,8 +20,65 @@ type HostMessage = {
   payload: unknown;
 };
 
-function storageKey(pluginId: string, key: string) {
-  return `cyfers:plugin:${pluginId}:${key}`;
+const legacyMigrated = new Set<string>();
+
+function legacyStoragePrefix(pluginId: string) {
+  return `cyfers:plugin:${pluginId}:`;
+}
+
+/** One-shot: copy legacy browser localStorage keys into the file-backed store. */
+async function migrateLegacyLocalStorage(pluginId: string): Promise<void> {
+  if (legacyMigrated.has(pluginId)) return;
+  legacyMigrated.add(pluginId);
+
+  const prefix = legacyStoragePrefix(pluginId);
+  const entries: Record<string, string> = {};
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const full = localStorage.key(i);
+    if (!full || !full.startsWith(prefix)) continue;
+    const key = full.slice(prefix.length);
+    if (!key) continue;
+    const value = localStorage.getItem(full);
+    if (value == null) continue;
+    entries[key] = value;
+    keysToRemove.push(full);
+  }
+
+  if (keysToRemove.length === 0) return;
+
+  const response = await fetch("/api/plugins/storage", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ pluginId, op: "migrate", entries }),
+  });
+  if (!response.ok) {
+    // Allow retry on a later storage call.
+    legacyMigrated.delete(pluginId);
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error || "Storage-migratie mislukt.");
+  }
+
+  for (const full of keysToRemove) localStorage.removeItem(full);
+}
+
+async function callPluginStorage(
+  pluginId: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
+  await migrateLegacyLocalStorage(pluginId);
+  const response = await fetch("/api/plugins/storage", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ pluginId, ...body }),
+  });
+  const payload = (await response.json()) as {
+    value?: string | null;
+    ok?: boolean;
+    error?: string;
+  };
+  if (!response.ok) throw new Error(payload.error || "Storage mislukt.");
+  return payload;
 }
 
 function readHostTheme(): "light" | "dark" {
@@ -41,6 +98,8 @@ export function PluginFrame({ pluginId, context, variant = "page", reloadToken =
     async function load() {
       setError(null);
       try {
+        // Best-effort: move legacy localStorage keys before the iframe talks to storage.
+        await migrateLegacyLocalStorage(pluginId).catch(() => undefined);
         const response = await fetch(`/api/plugins/${encodeURIComponent(pluginId)}/entry`);
         const payload = (await response.json()) as { html?: string; error?: string };
         if (!response.ok || !payload.html) throw new Error(payload.error || "Plugin laden mislukt.");
@@ -106,18 +165,25 @@ export function PluginFrame({ pluginId, context, variant = "page", reloadToken =
         }
         if (data.type === "storageGet") {
           const key = String((data.payload as { key?: string })?.key ?? "");
-          reply(localStorage.getItem(storageKey(pluginId, key)));
+          const payload = (await callPluginStorage(pluginId, { op: "get", key })) as {
+            value?: string | null;
+          };
+          reply(payload.value ?? null);
           return;
         }
         if (data.type === "storageSet") {
           const payload = data.payload as { key?: string; value?: string };
-          localStorage.setItem(storageKey(pluginId, String(payload.key ?? "")), String(payload.value ?? ""));
+          await callPluginStorage(pluginId, {
+            op: "set",
+            key: String(payload.key ?? ""),
+            value: String(payload.value ?? ""),
+          });
           reply(true);
           return;
         }
         if (data.type === "storageRemove") {
           const key = String((data.payload as { key?: string })?.key ?? "");
-          localStorage.removeItem(storageKey(pluginId, key));
+          await callPluginStorage(pluginId, { op: "remove", key });
           reply(true);
           return;
         }

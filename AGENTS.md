@@ -23,7 +23,8 @@ Sessions are encrypted on disk under the app userData directory.
   - `app/api/plugins/` – Upload, list, enable, proxy, entry, static UI assets.
   - `app/api/{schools,method,login,session,logout}/` – Auth and school APIs.
 - `lib/` – Somtoday OAuth/session helpers and plugin registry.
-  - `lib/plugins/` – Manifest, allowlist match, disk registry, SDK rewrite, base styles, rate limit.
+  - `lib/plugins/` – Manifest, allowlist match, disk registry, file-backed plugin storage,
+   SDK rewrite, base styles, rate limit.
   - `lib/somtoday.ts` – OAuth, exported `somFetch`, session/plugin context.
   - `lib/browser-sso.ts` – Calls Electron SSO bridge over localhost.
   - `lib/session.ts` – httpOnly cookie + encrypted file-backed token store.
@@ -176,7 +177,7 @@ are intentionally out of scope for this change set.
 - Do **not** expose tokens to the renderer or plugin iframes.
 - Do **not** let plugins mutate host React/JSX.
 - Do **not** relax API allowlist checks or serve arbitrary proxy hosts.
-- Do **not** commit userData plugin installs or session keys.
+- Do **not** commit userData plugin installs, plugin-storage files, or session keys.
 - Prefer surgical edits; keep Dutch UI copy consistent.
 - This product is Electron-only — do not reintroduce a public web deploy path.
 
@@ -185,7 +186,7 @@ are intentionally out of scope for this change set.
 | Hook | Purpose |
 | --- | --- |
 | `CYFERS_DESKTOP` | Set by Electron; disables Secure cookies on localhost |
-| `CYFERS_DATA_DIR` | Plugin installs + encrypted sessions (userData) |
+| `CYFERS_DATA_DIR` | Plugin installs, encrypted sessions, plugin-storage JSON (userData) |
 | `CYFERS_SESSION_KEY` | AES key material for session file |
 | `CYFERS_SSO_URL` / `CYFERS_SSO_SECRET` | Localhost bridge for SSO capture |
 | `CYFERS_PLUGIN_STORE_URL` | Override marketplace catalog URL |
