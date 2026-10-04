@@ -1,4 +1,5 @@
 import { BrowserWindow, session as electronSession } from "electron";
+import { resolveWindowIcon } from "./icon";
 
 const CLIENT_ID = "somtoday-leerling-web";
 const REDIRECT_URI = "https://leerling.somtoday.nl/oauth/callback";
@@ -56,12 +57,14 @@ export async function captureAuthorizationCode(tenantUuid: string, username: str
   const partition = `cyfers-sso-${Date.now()}`;
   const ses = electronSession.fromPartition(partition, { cache: false });
 
+  const windowIcon = resolveWindowIcon();
   const win = new BrowserWindow({
     width: 980,
     height: 760,
     show: true,
     autoHideMenuBar: true,
     title: "School inloggen",
+    ...(windowIcon ? { icon: windowIcon } : {}),
     webPreferences: {
       session: ses,
       nodeIntegration: false,

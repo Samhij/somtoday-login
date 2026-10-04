@@ -46,6 +46,12 @@
       "output": "release",
       "buildResources": "electron-assets"
     },
+    "extraResources": [
+      {
+        "from": "electron-assets/icon.png",
+        "to": "icon.png"
+      }
+    ],
     "files": [
       "dist-electron/**/*",
       "package.json",

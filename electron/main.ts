@@ -14,6 +14,7 @@ import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import { resolveWindowIcon } from "./icon";
 import { installMacUpdateFromZip, isMacAppSigned } from "./mac-update-install";
 import type { CyfersUpdateEvent } from "./preload";
 import { captureAuthorizationCode } from "./sso";
@@ -368,6 +369,7 @@ function createMainWindow(port: number) {
   const statePath = userDataPath("window-state.json");
   const state = loadWindowState(statePath);
 
+  const windowIcon = resolveWindowIcon();
   mainWindow = new BrowserWindow({
     width: state.width,
     height: state.height,
@@ -378,6 +380,7 @@ function createMainWindow(port: number) {
     minHeight: 600,
     show: false,
     title: "Cyfers",
+    ...(windowIcon ? { icon: windowIcon } : {}),
     autoHideMenuBar: !isDev,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
