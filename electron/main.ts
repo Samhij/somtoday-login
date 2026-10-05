@@ -229,8 +229,10 @@ function installDevMenu() {
     {
       label: "Weergave",
       submenu: [
-        { role: "reload", label: "Vernieuwen", accelerator: "CmdOrControl+R" },
-        { role: "forceReload", label: "Hard vernieuwen", accelerator: "CmdOrControl+Shift+R" },
+        // Use CommandOrControl / CmdOrCtrl — "CmdOrControl" is not a valid Electron
+        // modifier and was parsed as bare R, so typing "r" reloaded the app.
+        { role: "reload", label: "Vernieuwen", accelerator: "CommandOrControl+R" },
+        { role: "forceReload", label: "Hard vernieuwen", accelerator: "CommandOrControl+Shift+R" },
         { type: "separator" },
         { role: "toggleDevTools", label: "Developer Tools", accelerator: "F12" },
       ],
