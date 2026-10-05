@@ -419,7 +419,9 @@ function createMainWindow(port: number) {
 }
 
 async function boot() {
-  const dataDir = userDataPath("data");
+  // Unpackaged / npm run dev uses a separate data root so marketplace installs,
+  // plugin-storage, and sessions never mix with the packaged production app.
+  const dataDir = userDataPath(isDev ? "data-dev" : "data");
   ensureDir(path.join(dataDir, "plugins"));
 
   const sessionKey = readOrCreateSecret();

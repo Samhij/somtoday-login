@@ -186,7 +186,7 @@ are intentionally out of scope for this change set.
 | Hook | Purpose |
 | --- | --- |
 | `CYFERS_DESKTOP` | Set by Electron; disables Secure cookies on localhost |
-| `CYFERS_DATA_DIR` | Plugin installs, encrypted sessions, plugin-storage JSON (userData) |
+| `CYFERS_DATA_DIR` | Plugin installs, encrypted sessions, plugin-storage JSON under userData (`data` packaged, `data-dev` unpackaged / `npm run dev`) |
 | `CYFERS_SESSION_KEY` | AES key material for session file |
 | `CYFERS_SSO_URL` / `CYFERS_SSO_SECRET` | Localhost bridge for SSO capture |
 | `CYFERS_PLUGIN_STORE_URL` | Override marketplace catalog URL |

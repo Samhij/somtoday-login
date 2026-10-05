@@ -219,7 +219,8 @@ await cyfers.storage.remove("key");
 - `getContext()` – school- en leerlinginfo (geen tokens).
 - `fetch(path, init?)` – alleen paden uit jouw `permissions.api`; geeft JSON terug of gooit bij fout.
 - `storage.*` – key/value in de host, per plugin geïsoleerd; opgeslagen als JSON-bestand
-  onder `userData/data/plugin-storage/<plugin-id>.json` (niet in `localStorage`).
+  onder `userData/data/plugin-storage/<plugin-id>.json` in de verpakte app
+  (unpackaged / `npm run dev` gebruikt `userData/data-dev/…`; niet in `localStorage`).
 
 Tokens zie je nooit. Alleen paden uit jouw `permissions.api` werken.
 
