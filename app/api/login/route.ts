@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
+import { writeLoginPrefs } from "@/lib/login-prefs";
 import { loadSchools } from "@/lib/schools";
 import { writeSession } from "@/lib/session";
-import { loginWithPassword, sessionFromTokens } from "@/lib/somtoday";
+import { detectSignIn, loginWithPassword, sessionFromTokens } from "@/lib/somtoday";
+
+async function methodHint(
+  uuid: string,
+  schoolProviders: { name: string }[],
+  password: string,
+): Promise<"sso" | "password"> {
+  try {
+    const method = await detectSignIn(uuid);
+    if (method.providers.length > 0 && !method.hasPassword) return "sso";
+    return "password";
+  } catch {
+    if (!password && schoolProviders.length > 0) return "sso";
+    return "password";
+  }
+}
 
 export async function POST(request: Request) {
   let body: { uuid?: string; username?: string; password?: string };
@@ -30,6 +46,16 @@ export async function POST(request: Request) {
     const tokens = await loginWithPassword(school.uuid, username, password);
     const stored = sessionFromTokens(tokens, school.naam);
     await writeSession(stored);
+    const method = await methodHint(school.uuid, school.providers, password);
+    await writeLoginPrefs({
+      schoolUuid: school.uuid,
+      schoolName: school.naam,
+      schoolPlace: school.plaats,
+      username,
+      method,
+    }).catch((prefsError) => {
+      console.error("Loginvoorkeuren opslaan mislukt:", prefsError);
+    });
     return NextResponse.json({
       ok: true,
       session: {

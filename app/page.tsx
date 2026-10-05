@@ -12,6 +12,14 @@ type LiveMethod = {
 
 type Theme = "light" | "dark";
 
+type RememberedLogin = {
+  schoolUuid: string;
+  schoolName: string;
+  schoolPlace: string;
+  username: string;
+  method: "sso" | "password";
+};
+
 function readTheme(): Theme {
   if (typeof document === "undefined") return "light";
   const attr = document.documentElement.getAttribute("data-theme");
@@ -46,6 +54,11 @@ export default function HomePage() {
   const [liveMethod, setLiveMethod] = useState<LiveMethod | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>("light");
+  const [remembered, setRemembered] = useState<RememberedLogin | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const restoredRef = useRef(false);
+  const autoSsoAttemptedRef = useRef(false);
+  const skipAutoSsoRef = useRef(false);
 
   useEffect(() => {
     setTheme(readTheme());
@@ -100,7 +113,10 @@ export default function HomePage() {
     setTheme(next);
   }
 
-  function chooseSchool(school: School) {
+  function chooseSchool(school: School, options?: { fromRestore?: boolean }) {
+    if (!options?.fromRestore) {
+      skipAutoSsoRef.current = true;
+    }
     selection.current = school.uuid;
     setSelected(school);
     setLiveMethod(null);
@@ -122,8 +138,7 @@ export default function HomePage() {
       });
   }
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function submitLogin() {
     if (!selected) return;
     setSubmitting(true);
     setError(null);
@@ -145,10 +160,94 @@ export default function HomePage() {
     }
   }
 
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    skipAutoSsoRef.current = true;
+    await submitLogin();
+  }
+
+  async function forgetRemembered() {
+    skipAutoSsoRef.current = true;
+    autoSsoAttemptedRef.current = true;
+    await fetch("/api/login-prefs", { method: "DELETE" });
+    setRemembered(null);
+    setSelected(null);
+    setLiveMethod(null);
+    setUsername("");
+    setPassword("");
+    setQuery("");
+    setError(null);
+    selection.current = null;
+  }
+
   async function signOut() {
     await fetch("/api/logout", { method: "POST" });
     setSession(null);
+    // Re-apply remembered school/username; do not auto-open SSO again in-session.
+    restoredRef.current = false;
+    autoSsoAttemptedRef.current = false;
+    skipAutoSsoRef.current = true;
   }
+
+  // Restore school + username when there is no valid session.
+  useEffect(() => {
+    if (loadingSession || loadingSchools || session || restoredRef.current) return;
+    restoredRef.current = true;
+    let cancelled = false;
+
+    async function restore() {
+      try {
+        const response = await fetch("/api/login-prefs");
+        const payload = (await response.json()) as { prefs?: RememberedLogin | null };
+        if (cancelled || !payload.prefs) return;
+        const prefs = payload.prefs;
+        setRemembered(prefs);
+        setUsername(prefs.username);
+        setQuery(prefs.schoolName);
+        const match = schools.find((school) => school.uuid === prefs.schoolUuid);
+        const school: School = match ?? {
+          uuid: prefs.schoolUuid,
+          naam: prefs.schoolName,
+          plaats: prefs.schoolPlace || "-",
+          providers: [],
+        };
+        chooseSchool(school, { fromRestore: true });
+      } catch {
+        // missing prefs is fine
+      }
+    }
+
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+    // chooseSchool is stable enough for one-shot restore; schools list is the dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingSession, loadingSchools, session, schools]);
+
+  // SSO: auto-open IdP once after restore. Password: focus wachtwoord.
+  useEffect(() => {
+    if (!remembered || !selected || detecting || !liveMethod) return;
+    if (selected.uuid !== remembered.schoolUuid) return;
+
+    const isSsoOnly = liveMethod.providers.length > 0 && !liveMethod.hasPassword;
+
+    if (remembered.method === "password" || !isSsoOnly) {
+      if (!isSsoOnly) {
+        const frame = requestAnimationFrame(() => passwordRef.current?.focus());
+        return () => cancelAnimationFrame(frame);
+      }
+      return;
+    }
+
+    if (skipAutoSsoRef.current || autoSsoAttemptedRef.current || submitting || !username.trim()) {
+      return;
+    }
+
+    autoSsoAttemptedRef.current = true;
+    void submitLogin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remembered, selected, detecting, liveMethod, username, submitting]);
 
   const toggle = (
     <ThemeToggle theme={theme} onToggle={() => applyTheme(theme === "dark" ? "light" : "dark")} />
@@ -178,7 +277,9 @@ export default function HomePage() {
         {toggle}
       </div>
       <h1>Inloggen</h1>
-      <p className="lede">Kies je school en log in.</p>
+      <p className="lede">
+        {remembered ? "Welkom terug — je school en gebruikersnaam staan klaar." : "Kies je school en log in."}
+      </p>
 
       <section className="block">
         <div className="field">
@@ -232,7 +333,10 @@ export default function HomePage() {
                   type="text"
                   autoComplete="username"
                   value={username}
-                  onChange={(event) => setUsername(event.target.value)}
+                  onChange={(event) => {
+                    skipAutoSsoRef.current = true;
+                    setUsername(event.target.value);
+                  }}
                   required
                 />
               </div>
@@ -241,6 +345,7 @@ export default function HomePage() {
                   <label htmlFor="password">Wachtwoord</label>
                   <input
                     id="password"
+                    ref={passwordRef}
                     type="password"
                     autoComplete="current-password"
                     value={password}
@@ -251,8 +356,19 @@ export default function HomePage() {
               ) : null}
               <div className="actions">
                 <button className="primary" type="submit" disabled={submitting || detecting}>
-                  {submitting ? "Bezig…" : ssoOnly && providers[0] ? `Verder met ${providers[0]}` : "Inloggen"}
+                  {submitting
+                    ? ssoOnly
+                      ? "School-inloggen openen…"
+                      : "Bezig…"
+                    : ssoOnly && providers[0]
+                      ? `Verder met ${providers[0]}`
+                      : "Inloggen"}
                 </button>
+                {remembered ? (
+                  <button className="ghost" type="button" onClick={() => void forgetRemembered()}>
+                    Andere account
+                  </button>
+                ) : null}
               </div>
             </form>
           </>
