@@ -79,6 +79,8 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
+  const [storeQuery, setStoreQuery] = useState("");
+  const [storeKindFilter, setStoreKindFilter] = useState<"all" | PluginKind>("all");
   const [active, setActive] = useState<string>("__overview__");
   const [context, setContext] = useState<PluginSessionContext | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -301,6 +303,19 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     [storePlugins],
   );
 
+  const filteredStorePlugins = useMemo(() => {
+    const needle = storeQuery.trim().toLowerCase();
+    return storePlugins.filter((entry) => {
+      const kind = entry.kind ?? "page";
+      if (storeKindFilter !== "all" && kind !== storeKindFilter) return false;
+      if (!needle) return true;
+      const haystack = [entry.name, entry.description, entry.id]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [storePlugins, storeQuery, storeKindFilter]);
+
   const outdatedById = useMemo(
     () => new Set(outdatedStorePlugins.map((entry) => entry.id)),
     [outdatedStorePlugins],
@@ -461,12 +476,16 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
 
   function openStore() {
     setStoreError(null);
+    setStoreQuery("");
+    setStoreKindFilter("all");
     setStoreOpen(true);
   }
 
   function closeStore() {
     if (installingId || bulkUpdating) return;
     setStoreOpen(false);
+    setStoreQuery("");
+    setStoreKindFilter("all");
   }
 
   async function installDesktopUpdate() {
@@ -1021,14 +1040,66 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
 
                 <div className="modal-body">
                   {storeError ? <p className="error">{storeError}</p> : null}
+                  {storePlugins.length > 0 || storeLoading ? (
+                    <div className="marketplace-toolbar">
+                      <div className="field marketplace-search">
+                        <label htmlFor="marketplace-search">Zoeken</label>
+                        <input
+                          id="marketplace-search"
+                          type="search"
+                          placeholder="Naam, beschrijving of id"
+                          value={storeQuery}
+                          onChange={(event) => setStoreQuery(event.target.value)}
+                          disabled={storeLoading && storePlugins.length === 0}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div
+                        className="marketplace-kind-filter"
+                        role="group"
+                        aria-label="Filter op type"
+                      >
+                        {(
+                          [
+                            { value: "all", label: "Alles" },
+                            { value: "page", label: "Pagina's" },
+                            { value: "widget", label: "Widgets" },
+                          ] as const
+                        ).map((option) => {
+                          const selected = storeKindFilter === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={
+                                selected
+                                  ? "marketplace-kind-btn marketplace-kind-btn-active"
+                                  : "marketplace-kind-btn"
+                              }
+                              aria-pressed={selected}
+                              onClick={() => setStoreKindFilter(option.value)}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
                   {storeLoading && storePlugins.length === 0 ? (
                     <p className="meta">Catalogus laden…</p>
                   ) : null}
                   {!storeLoading && !storeError && storePlugins.length === 0 ? (
                     <p className="meta">Nog geen plugins in de catalogus.</p>
                   ) : null}
+                  {!storeLoading &&
+                  !storeError &&
+                  storePlugins.length > 0 &&
+                  filteredStorePlugins.length === 0 ? (
+                    <p className="meta">Geen plugins gevonden.</p>
+                  ) : null}
                   <ul className="plugin-list">
-                    {storePlugins.map((entry) => {
+                    {filteredStorePlugins.map((entry) => {
                       const Icon = resolvePluginIcon(entry.nav.icon) || Puzzle;
                       const busy = installingId === entry.id;
                       const isPrimaryInstall =
