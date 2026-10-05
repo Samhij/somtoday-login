@@ -934,6 +934,47 @@ html[data-theme="dark"] .modal-backdrop {
   padding: 0.35rem 1.25rem 1.25rem;
 }
 
+.marketplace-toolbar {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.marketplace-search {
+  max-width: none;
+}
+
+.marketplace-kind-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.marketplace-kind-btn {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  opacity: 1;
+}
+
+.marketplace-kind-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  color: var(--ink);
+}
+
+.marketplace-kind-btn-active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .modal-body .plugin-list {
   margin-top: 0.5rem;
 }
