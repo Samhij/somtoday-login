@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { dataDir } from "@/lib/data-dir";
 
 /** Non-secret last-login hints under CYFERS_DATA_DIR (never passwords). */
 export type LoginPrefs = {
@@ -14,16 +15,17 @@ export type LoginPrefs = {
 
 const globalPrefs = globalThis as typeof globalThis & {
   __cyfersLoginPrefs?: LoginPrefs | null;
-  __cyfersLoginPrefsLoaded?: boolean;
+  __cyfersLoginPrefsLoad?: Promise<void>;
   __cyfersLoginPrefsWrite?: Promise<void>;
 };
 
-function dataDir() {
-  return process.env.CYFERS_DATA_DIR || path.join(process.cwd(), "data");
-}
-
 function prefsPath() {
   return path.join(dataDir(), "login-prefs.json");
+}
+
+/** Possible leftover path when CYFERS_DATA_DIR was missing (inside .app / cwd). */
+function orphanPrefsPath() {
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "login-prefs.json");
 }
 
 function isMethod(value: unknown): value is "sso" | "password" {
@@ -47,15 +49,49 @@ function parsePrefs(raw: unknown): LoginPrefs | null {
   };
 }
 
-async function ensureLoaded() {
-  if (globalPrefs.__cyfersLoginPrefsLoaded) return;
-  globalPrefs.__cyfersLoginPrefsLoaded = true;
+async function readPrefsFile(filePath: string): Promise<LoginPrefs | null> {
   try {
-    const raw = await fs.readFile(prefsPath(), "utf8");
-    globalPrefs.__cyfersLoginPrefs = parsePrefs(JSON.parse(raw));
+    const raw = await fs.readFile(filePath, "utf8");
+    return parsePrefs(JSON.parse(raw));
   } catch {
-    globalPrefs.__cyfersLoginPrefs = null;
+    return null;
   }
+}
+
+async function loadFromDisk(): Promise<LoginPrefs | null> {
+  const primary = await readPrefsFile(prefsPath());
+  if (primary) return primary;
+
+  // Migrate prefs written under cwd/data (bundle/standalone) into userData.
+  const orphanPath = orphanPrefsPath();
+  if (path.resolve(orphanPath) === path.resolve(prefsPath())) return null;
+  const orphan = await readPrefsFile(orphanPath);
+  if (!orphan) return null;
+  try {
+    await fs.mkdir(dataDir(), { recursive: true });
+    await fs.writeFile(prefsPath(), `${JSON.stringify(orphan, null, 2)}\n`, {
+      encoding: "utf8",
+      mode: 0o600,
+    });
+    await fs.unlink(orphanPath).catch(() => undefined);
+  } catch (error) {
+    console.error("Loginvoorkeuren migreren mislukt:", error);
+  }
+  return orphan;
+}
+
+function ensureLoaded(): Promise<void> {
+  if (!globalPrefs.__cyfersLoginPrefsLoad) {
+    globalPrefs.__cyfersLoginPrefsLoad = loadFromDisk()
+      .then((prefs) => {
+        globalPrefs.__cyfersLoginPrefs = prefs;
+      })
+      .catch((error) => {
+        console.error("Loginvoorkeuren laden mislukt:", error);
+        globalPrefs.__cyfersLoginPrefs = null;
+      });
+  }
+  return globalPrefs.__cyfersLoginPrefsLoad;
 }
 
 async function persist(prefs: LoginPrefs | null) {
