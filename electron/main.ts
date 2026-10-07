@@ -420,11 +420,45 @@ function createMainWindow(port: number) {
   });
 }
 
+/**
+ * If an older build wrote sessions/prefs under Resources/standalone/data
+ * (cwd fallback when CYFERS_DATA_DIR was missing), copy them into userData
+ * before the Next process starts. Mac in-app updates replace the .app bundle
+ * and would otherwise wipe those files forever.
+ */
+function migrateOrphanedStandaloneData(targetDataDir: string) {
+  if (isDev) return;
+  let standaloneData: string;
+  try {
+    const { root } = resolveStandaloneServer();
+    standaloneData = path.join(root, "data");
+  } catch {
+    return;
+  }
+  if (!fs.existsSync(standaloneData)) return;
+  if (path.resolve(standaloneData) === path.resolve(targetDataDir)) return;
+
+  ensureDir(targetDataDir);
+  for (const name of ["login-prefs.json", "sessions.enc"]) {
+    const from = path.join(standaloneData, name);
+    const to = path.join(targetDataDir, name);
+    if (!fs.existsSync(from) || fs.existsSync(to)) continue;
+    try {
+      fs.copyFileSync(from, to);
+      fs.unlinkSync(from);
+      console.log(`Migrated ${name} from standalone/data → userData`);
+    } catch (error) {
+      console.error(`Could not migrate ${name}:`, error);
+    }
+  }
+}
+
 async function boot() {
   // Unpackaged / npm run dev uses a separate data root so marketplace installs,
   // plugin-storage, and sessions never mix with the packaged production app.
   const dataDir = userDataPath(isDev ? "data-dev" : "data");
   ensureDir(path.join(dataDir, "plugins"));
+  migrateOrphanedStandaloneData(dataDir);
 
   const sessionKey = readOrCreateSecret();
   const ssoSecret = crypto.randomBytes(32).toString("hex");

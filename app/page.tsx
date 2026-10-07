@@ -69,8 +69,8 @@ export default function HomePage() {
     async function load() {
       try {
         const [schoolResponse, sessionResponse] = await Promise.all([
-          fetch("/api/schools"),
-          fetch("/api/session"),
+          fetch("/api/schools", { cache: "no-store" }),
+          fetch("/api/session", { cache: "no-store" }),
         ]);
         const schoolPayload = (await schoolResponse.json()) as { schools?: School[]; error?: string };
         const sessionPayload = (await sessionResponse.json()) as { session?: SessionInfo | null };
@@ -169,7 +169,7 @@ export default function HomePage() {
   async function forgetRemembered() {
     skipAutoSsoRef.current = true;
     autoSsoAttemptedRef.current = true;
-    await fetch("/api/login-prefs", { method: "DELETE" });
+    await fetch("/api/login-prefs", { method: "DELETE", cache: "no-store" });
     setRemembered(null);
     setSelected(null);
     setLiveMethod(null);
@@ -195,11 +195,15 @@ export default function HomePage() {
     restoredRef.current = true;
     let cancelled = false;
 
-    async function restore() {
+    async function restore(attempt = 0) {
       try {
-        const response = await fetch("/api/login-prefs");
+        // Bypass Chromium HTTP disk cache — a cached {prefs:null} from the first
+        // launch would otherwise stick across relaunches (and Mac in-app updates).
+        const response = await fetch("/api/login-prefs", { cache: "no-store" });
+        if (!response.ok) throw new Error("prefs");
         const payload = (await response.json()) as { prefs?: RememberedLogin | null };
-        if (cancelled || !payload.prefs) return;
+        if (cancelled) return;
+        if (!payload.prefs) return;
         const prefs = payload.prefs;
         setRemembered(prefs);
         setUsername(prefs.username);
@@ -213,7 +217,13 @@ export default function HomePage() {
         };
         chooseSchool(school, { fromRestore: true });
       } catch {
-        // missing prefs is fine
+        if (cancelled) return;
+        if (attempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          if (!cancelled) await restore(attempt + 1);
+          return;
+        }
+        // Give up for this mount; logout resets restoredRef for another try.
       }
     }
 

@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes, createHash } from "node:
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { cookies } from "next/headers";
+import { dataDir } from "@/lib/data-dir";
 import type { SessionInfo } from "./types";
 
 export type StoredSession = {
@@ -20,10 +21,6 @@ const globalStore = globalThis as typeof globalThis & {
   __somSessionsLoaded?: boolean;
   __somSessionsWrite?: Promise<void>;
 };
-
-function dataDir() {
-  return process.env.CYFERS_DATA_DIR || path.join(process.cwd(), "data");
-}
 
 function sessionsPath() {
   return path.join(dataDir(), "sessions.enc");
