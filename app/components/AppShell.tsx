@@ -33,7 +33,7 @@ type DevPluginListing = {
   description: string;
   author: string;
   kind: PluginKind;
-  nav: { label: string; icon: string; order: number };
+  nav: { label: string; icon: string; order?: number };
   permissions: { api: string[] };
   folder: string;
   loaded: boolean;
@@ -49,7 +49,7 @@ type StoreListing = {
   description: string;
   author: string;
   kind: PluginKind;
-  nav: { label: string; icon: string; order: number };
+  nav: { label: string; icon: string; order?: number };
   permissions: { api: string[] };
   sourceUrl?: string;
   installed: boolean;
@@ -331,6 +331,21 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
       setError(payload.error || "Bijwerken mislukt.");
+      return;
+    }
+    await loadPlugins();
+  }
+
+  async function setPluginNavOrder(id: string, order: number) {
+    setError(null);
+    const response = await fetch(`/api/plugins/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error || "Volgorde opslaan mislukt.");
       return;
     }
     await loadPlugins();
@@ -711,7 +726,10 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                 <div className="manage-section-head">
                   <div className="manage-section-titles">
                     <h2 id="installed-heading">Geïnstalleerd</h2>
-                    <p className="meta">Zet plugins aan of uit, of verwijder ze. Updates staan hierboven.</p>
+                    <p className="meta">
+                      Zet de volgorde (lager = eerder), schakel plugins aan of uit, of verwijder ze.
+                      Updates staan hierboven.
+                    </p>
                   </div>
                   <span className="manage-count" aria-hidden>
                     {plugins.length}
@@ -791,6 +809,39 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                             ) : null}
                           </div>
                           <div className="plugin-actions">
+                            <label className="plugin-order">
+                              <span>Volgorde</span>
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                step={1}
+                                value={plugin.nav.order}
+                                aria-label={`Volgorde van ${plugin.name}`}
+                                onChange={(event) => {
+                                  const next = Number(event.target.value);
+                                  if (!Number.isFinite(next)) return;
+                                  setPlugins((prev) =>
+                                    prev.map((item) =>
+                                      item.id === plugin.id
+                                        ? { ...item, nav: { ...item.nav, order: Math.trunc(next) } }
+                                        : item,
+                                    ),
+                                  );
+                                }}
+                                onBlur={(event) => {
+                                  const next = Number(event.target.value);
+                                  if (!Number.isFinite(next)) {
+                                    void loadPlugins();
+                                    return;
+                                  }
+                                  void setPluginNavOrder(plugin.id, Math.trunc(next));
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key !== "Enter") return;
+                                  event.currentTarget.blur();
+                                }}
+                              />
+                            </label>
                             <label className="switch">
                               <input
                                 type="checkbox"

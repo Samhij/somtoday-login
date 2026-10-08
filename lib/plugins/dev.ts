@@ -120,9 +120,7 @@ export async function listDevPlugins(): Promise<{
   }
 
   plugins.sort((a, b) => {
-    const order = a.nav.order - b.nav.order;
-    if (order !== 0) return order;
-    return a.nav.label.localeCompare(b.nav.label, "nl");
+    return a.nav.label.localeCompare(b.nav.label, "nl") || a.id.localeCompare(b.id);
   });
 
   return {root, plugins};

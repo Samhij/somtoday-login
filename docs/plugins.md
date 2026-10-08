@@ -43,8 +43,7 @@ ingestelde ontwikkelmap. Klik **Laden** om de unpacked map te koppelen; **Herlad
   "entry": "ui/index.html",
   "nav": {
     "label": "Zijbalknaam",
-    "icon": "BookOpen",
-    "order": 50
+    "icon": "BookOpen"
   },
   "permissions": {
     "api": ["/rest/v1/leerlingen"]
@@ -65,8 +64,7 @@ ingestelde ontwikkelmap. Klik **Laden** om de unpacked map te koppelen; **Herlad
   "entry": "ui/index.html",
   "nav": {
     "label": "Titel op Overzicht",
-    "icon": "ChartColumn",
-    "order": 10
+    "icon": "ChartColumn"
   },
   "permissions": {
     "api": [
@@ -81,6 +79,9 @@ ingestelde ontwikkelmap. Klik **Laden** om de unpacked map te koppelen; **Herlad
 - `id`: kebab-case, uniek
 - `nav.icon`: Lucide-naam (PascalCase)
 - `permissions.api`: glob-paden die met `/rest/` beginnen; `*` matcht binnen één segment
+- Zijbalk- / widgetvolgorde stelt de gebruiker in onder **Plugins** (niet via het
+  manifest). Optioneel legacy `nav.order` wordt alleen als startwaarde gebruikt
+  tot de gebruiker een eigen volgorde zet.
 
 ## HTML (`ui/index.html`)
 

@@ -1,6 +1,11 @@
 import {promises as fs} from "fs";
 import path from "path";
 import JSZip from "jszip";
+import {
+    clearPluginOrder,
+    getPluginOrderMap,
+    resolvePluginOrder,
+} from "@/lib/plugin-order-prefs";
 import {parseManifest, type PluginManifest} from "./manifest";
 
 export type PluginDevLinkMode = "symlink" | "copy";
@@ -84,11 +89,22 @@ async function migrateLegacyPluginIndex(): Promise<void> {
 export async function listPlugins(): Promise<InstalledPlugin[]> {
     await migrateLegacyPluginIndex();
     const index = await readIndex();
-    return [...index.plugins].sort((a, b) => {
-        const order = a.nav.order - b.nav.order;
-        if (order !== 0) return order;
-        return a.nav.label.localeCompare(b.nav.label, "nl");
-    });
+    const userOrders = await getPluginOrderMap();
+    return [...index.plugins]
+        .map((plugin) => ({
+            ...plugin,
+            nav: {
+                ...plugin.nav,
+                order: resolvePluginOrder(plugin.id, plugin.nav.order, userOrders),
+            },
+        }))
+        .sort((a, b) => {
+            const order = a.nav.order - b.nav.order;
+            if (order !== 0) return order;
+            const installed = a.installedAt.localeCompare(b.installedAt);
+            if (installed !== 0) return installed;
+            return a.nav.label.localeCompare(b.nav.label, "nl");
+        });
 }
 
 export async function getPlugin(id: string): Promise<InstalledPlugin | null> {
@@ -116,6 +132,7 @@ export async function removePlugin(id: string): Promise<void> {
     if (!plugin) throw new Error("Plugin niet gevonden.");
     index.plugins = index.plugins.filter((item) => item.id !== id);
     await writeIndex(index);
+    await clearPluginOrder(id).catch(() => undefined);
     await fs.rm(pluginDir(id), {recursive: true, force: true});
 }
 

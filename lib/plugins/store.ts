@@ -10,7 +10,7 @@ export type StorePlugin = {
   description: string;
   author: string;
   kind: PluginKind;
-  nav: { label: string; icon: string; order: number };
+  nav: { label: string; icon: string; order?: number };
   permissions: { api: string[] };
   downloadUrl?: string;
   sha256?: string;

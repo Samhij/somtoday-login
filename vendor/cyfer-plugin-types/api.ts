@@ -48,7 +48,11 @@ export type PluginKind = "page" | "widget";
 export type PluginNav = {
   label: string;
   icon: string;
-  order: number;
+  /**
+   * Legacy optional sort key. Cyfers sidebar / Overview order is user-controlled
+   * in the host; when unset the host defaults to 100 then install time / label.
+   */
+  order?: number;
 };
 
 /** Shape of `manifest.json` (validated by the Cyfers host on install). */
