@@ -33,6 +33,7 @@ Sessions are encrypted on disk under the app userData directory.
 - `vendor/cyfer-plugin-styles/` – Vendored plugin base CSS from `cyfer-plugins/styles/` (source of truth).
 - `packaging/aur/cyfers-bin/` – AUR `cyfers-bin` PKGBUILD (manual pacman updates; not auto-published).
 - `docs/plugins.md` – Dutch author guide for zip plugins.
+- `docs/somtoday-api/` – Somtoday REST docs derived from NONtoday/leerling-source.
 - `next.config.ts`, `tsconfig.json`, `package.json` – tooling/config (electron-builder).
 
 ## Build & Development Commands
@@ -200,6 +201,7 @@ are intentionally out of scope for this change set.
 ## Further Reading
 
 - [docs/plugins.md](docs/plugins.md) – plugin author guide (NL)
+- [docs/somtoday-api/](docs/somtoday-api/) – Somtoday REST as used by leerling-source
 - [Next.js App Router](https://nextjs.org/docs/app)
 - [Electron](https://www.electronjs.org/docs/latest)
 - School org data: https://github.com/NONtoday/organisaties.json
