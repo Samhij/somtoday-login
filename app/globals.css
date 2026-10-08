@@ -1036,6 +1036,38 @@ html[data-theme="dark"] .modal-backdrop {
   font-size: 0.92rem;
 }
 
+.plugin-order {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plugin-order input {
+  width: 4.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-elevated, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: right;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.plugin-order input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .switch {
   display: flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireStoredSession } from "@/lib/plugins/auth";
+import { setPluginOrder } from "@/lib/plugin-order-prefs";
 import { getPlugin, removePlugin, setPluginEnabled } from "@/lib/plugins/registry";
 
 type Params = { params: Promise<{ id: string }> };
@@ -19,19 +20,36 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!session) return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
 
   const { id } = await params;
-  let body: { enabled?: boolean };
+  let body: { enabled?: boolean; order?: number };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
   }
 
-  if (typeof body.enabled !== "boolean") {
-    return NextResponse.json({ error: "enabled (boolean) is verplicht." }, { status: 400 });
+  const hasEnabled = typeof body.enabled === "boolean";
+  const hasOrder = typeof body.order === "number" && Number.isFinite(body.order);
+  if (!hasEnabled && !hasOrder) {
+    return NextResponse.json(
+      { error: "enabled (boolean) en/of order (number) is verplicht." },
+      { status: 400 },
+    );
   }
 
   try {
-    const plugin = await setPluginEnabled(id, body.enabled);
+    const existing = await getPlugin(id);
+    if (!existing) {
+      return NextResponse.json({ error: "Plugin niet gevonden." }, { status: 404 });
+    }
+
+    if (hasEnabled) {
+      await setPluginEnabled(id, body.enabled!);
+    }
+    if (hasOrder) {
+      await setPluginOrder(id, body.order!);
+    }
+
+    const plugin = await getPlugin(id);
     return NextResponse.json({ plugin });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Bijwerken mislukt.";

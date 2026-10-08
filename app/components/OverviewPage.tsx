@@ -7,7 +7,7 @@ import type { PluginSessionContext } from "@/lib/somtoday";
 
 type WidgetPlugin = {
   id: string;
-  nav: { label: string; icon: string; order: number };
+  nav: { label: string; icon: string; order?: number };
 };
 
 type Props = {

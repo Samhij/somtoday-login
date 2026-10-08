@@ -42,6 +42,7 @@ export function parseManifest(raw: unknown): PluginManifest {
   const label = String(navObj.label ?? name).trim() || name;
   let icon = String(navObj.icon ?? "Puzzle").trim() || "Puzzle";
   if (!isLucideIconName(icon)) icon = "Puzzle";
+  // Legacy optional field — user order prefs in the host override this.
   const order = Number.isFinite(Number(navObj.order)) ? Number(navObj.order) : 100;
 
   const permissions = data.permissions;
