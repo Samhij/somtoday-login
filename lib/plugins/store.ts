@@ -22,17 +22,26 @@ export type PluginCatalog = {
   plugins: StorePlugin[];
 };
 
-const DEFAULT_REPO = "Samhij/cyfer-plugins";
+/** Canonical marketplace repo (Samhij/cyfer-plugins redirects here). */
+const DEFAULT_REPO = "cyfers-somtoday/cyfer-plugins";
 const DEFAULT_REF = "main";
 const MAX_ZIP_BYTES = 2 * 1024 * 1024;
+/** Whole-repo zipball is larger than a single plugin; cap to avoid runaway downloads. */
+const MAX_ZIPBALL_BYTES = 20 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
+/** Avoid hammering the GitHub Contents API when the Plugins screen refreshes. */
+const CATALOG_CACHE_MS = 45_000;
 
 const ALLOWED_DOWNLOAD_HOSTS = new Set([
   "raw.githubusercontent.com",
   "github.com",
   "objects.githubusercontent.com",
   "codeload.github.com",
+  "cdn.jsdelivr.net",
 ]);
+
+type CatalogCache = { at: number; catalog: PluginCatalog };
+let catalogCache: CatalogCache | null = null;
 
 function storeRepo() {
   const raw = process.env.CYFERS_PLUGIN_STORE_REPO?.trim() || DEFAULT_REPO;
@@ -46,7 +55,40 @@ function storeRef() {
 }
 
 function userAgent() {
-  return "Cyfers-Desktop/1.0 (+https://github.com/Samhij/somtoday-login)";
+  return "Cyfers-Desktop/1.0 (+https://github.com/cyfers-somtoday/somtoday-login)";
+}
+
+/** Optional PAT raises API limits above the unauthenticated 60/hr ceiling. */
+function githubToken(): string | undefined {
+  const token =
+    process.env.CYFERS_GITHUB_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
+  return token || undefined;
+}
+
+function githubApiHeaders(extra?: HeadersInit): HeadersInit {
+  const headers: Record<string, string> = {
+    accept: "application/vnd.github+json",
+    "x-github-api-version": "2022-11-28",
+  };
+  const token = githubToken();
+  if (token) headers.authorization = `Bearer ${token}`;
+  return { ...headers, ...(extra ?? {}) };
+}
+
+function isGithubRateLimited(response: Response): boolean {
+  if (response.status === 429) return true;
+  if (response.status !== 403) return false;
+  return response.headers.get("x-ratelimit-remaining") === "0";
+}
+
+function rateLimitMessage(response: Response): string {
+  const reset = response.headers.get("x-ratelimit-reset");
+  if (reset && /^\d+$/.test(reset)) {
+    const seconds = Math.max(0, Number(reset) * 1000 - Date.now());
+    const minutes = Math.max(1, Math.ceil(seconds / 60_000));
+    return `GitHub API-limiet bereikt. Probeer over ±${minutes} min opnieuw.`;
+  }
+  return `GitHub inhoud laden mislukt (${response.status}).`;
 }
 
 async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
@@ -64,10 +106,25 @@ async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Respon
         ...(init?.headers ?? {}),
       },
       cache: "no-store",
+      redirect: "follow",
     });
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchWithRetry(url: string, init?: RequestInit, retries = 1): Promise<Response> {
+  let last: Response | undefined;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    last = await fetchWithTimeout(url, init);
+    if (last.ok) return last;
+    const retryable = last.status === 429 || last.status === 502 || last.status === 503;
+    if (!retryable || attempt === retries) return last;
+    const retryAfter = Number(last.headers.get("retry-after") || "0");
+    const delayMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 750 * (attempt + 1);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return last!;
 }
 
 function assertAllowedDownloadUrl(urlString: string) {
@@ -115,6 +172,16 @@ function parseCatalog(raw: unknown): PluginCatalog {
   };
 }
 
+function rememberCatalog(catalog: PluginCatalog): PluginCatalog {
+  catalogCache = { at: Date.now(), catalog };
+  return catalog;
+}
+
+/** Test helper / forced refresh after install. */
+export function clearPluginCatalogCache() {
+  catalogCache = null;
+}
+
 /**
  * Load marketplace catalog.
  *
@@ -122,18 +189,24 @@ function parseCatalog(raw: unknown): PluginCatalog {
  * `CYFERS_PLUGIN_STORE_REPO` / `CYFERS_PLUGIN_STORE_REF`.
  * raw.githubusercontent.com Fastly ignores query-string cache busters and can
  * serve a stale catalog for up to max-age=300 after a push — so the API is the
- * primary path. On API failure, fall back to raw (may briefly lag).
+ * primary path. On API failure (incl. unauthenticated 60/hr 403), fall back to
+ * raw then jsDelivr.
  *
  * Override: `CYFERS_PLUGIN_STORE_URL` still fetches that URL directly (no-store).
+ * Optional `CYFERS_GITHUB_TOKEN` / `GITHUB_TOKEN` raises API rate limits.
  */
 export async function fetchPluginCatalog(): Promise<PluginCatalog> {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_CACHE_MS) {
+    return catalogCache.catalog;
+  }
+
   const override = process.env.CYFERS_PLUGIN_STORE_URL?.trim();
   if (override) {
-    const response = await fetchWithTimeout(override);
+    const response = await fetchWithRetry(override);
     if (!response.ok) {
       throw new Error(`Catalogus laden mislukt (${response.status}).`);
     }
-    return parseCatalog((await response.json()) as unknown);
+    return rememberCatalog(parseCatalog((await response.json()) as unknown));
   }
 
   const { owner, repo } = storeRepo();
@@ -141,19 +214,29 @@ export async function fetchPluginCatalog(): Promise<PluginCatalog> {
   const apiUrl =
     `https://api.github.com/repos/${owner}/${repo}/contents/catalog.json` +
     `?ref=${encodeURIComponent(ref)}`;
-  const apiResponse = await fetchWithTimeout(apiUrl, {
-    headers: { accept: "application/vnd.github.raw" },
+  const apiResponse = await fetchWithRetry(apiUrl, {
+    headers: githubApiHeaders({ accept: "application/vnd.github.raw" }),
   });
   if (apiResponse.ok) {
-    return parseCatalog((await apiResponse.json()) as unknown);
+    return rememberCatalog(parseCatalog((await apiResponse.json()) as unknown));
   }
 
   const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/catalog.json`;
-  const rawResponse = await fetchWithTimeout(rawUrl);
-  if (!rawResponse.ok) {
-    throw new Error(`Catalogus laden mislukt (${apiResponse.status}).`);
+  const rawResponse = await fetchWithRetry(rawUrl);
+  if (rawResponse.ok) {
+    return rememberCatalog(parseCatalog((await rawResponse.json()) as unknown));
   }
-  return parseCatalog((await rawResponse.json()) as unknown);
+
+  const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${ref}/catalog.json`;
+  const cdnResponse = await fetchWithRetry(jsdelivrUrl);
+  if (cdnResponse.ok) {
+    return rememberCatalog(parseCatalog((await cdnResponse.json()) as unknown));
+  }
+
+  if (isGithubRateLimited(apiResponse)) {
+    throw new Error(rateLimitMessage(apiResponse));
+  }
+  throw new Error(`Catalogus laden mislukt (${apiResponse.status}).`);
 }
 
 export function findStorePlugin(catalog: PluginCatalog, id: string): StorePlugin | null {
@@ -190,63 +273,69 @@ export function isVersionNewer(remote: string, local: string): boolean {
   return false;
 }
 
-type GitHubContentItem = {
-  name: string;
-  path: string;
-  type: "file" | "dir" | string;
-  download_url: string | null;
-  size?: number;
-};
-
-async function listGithubDir(owner: string, repo: string, dirPath: string, ref: string): Promise<GitHubContentItem[]> {
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${dirPath}?ref=${encodeURIComponent(ref)}`;
-  const response = await fetchWithTimeout(url);
-  if (response.status === 404) throw new Error("Plugin niet gevonden in de catalogus-repo.");
-  if (!response.ok) throw new Error(`GitHub inhoud laden mislukt (${response.status}).`);
-  const json = (await response.json()) as unknown;
-  if (!Array.isArray(json)) throw new Error("Onverwacht GitHub-antwoord.");
-  return json as GitHubContentItem[];
+function zipballUrl(owner: string, repo: string, ref: string): string {
+  if (/^[0-9a-f]{40}$/i.test(ref)) {
+    return `https://codeload.github.com/${owner}/${repo}/zip/${ref}`;
+  }
+  if (ref.startsWith("refs/")) {
+    return `https://codeload.github.com/${owner}/${repo}/zip/${ref}`;
+  }
+  return `https://codeload.github.com/${owner}/${repo}/zip/refs/heads/${encodeURIComponent(ref)}`;
 }
 
-async function collectPluginFiles(
+/**
+ * Download the marketplace repo as one zipball and extract `plugins/<id>/`.
+ * Avoids the unauthenticated Contents API (60 req/hr) that caused intermittent
+ * "GitHub inhoud laden mislukt (403)" during install/update.
+ */
+async function collectPluginFilesFromZipball(
   owner: string,
   repo: string,
   pluginId: string,
   ref: string,
 ): Promise<Array<{ relative: string; bytes: Buffer }>> {
-  const root = `plugins/${pluginId}`;
+  const url = zipballUrl(owner, repo, ref);
+  assertAllowedDownloadUrl(url);
+  const response = await fetchWithRetry(url, {
+    headers: { accept: "application/zip, application/octet-stream, */*" },
+  });
+  if (response.status === 404) {
+    throw new Error("Plugin-repo of branch niet gevonden.");
+  }
+  if (!response.ok) {
+    if (isGithubRateLimited(response)) throw new Error(rateLimitMessage(response));
+    throw new Error(`GitHub zipball laden mislukt (${response.status}).`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.byteLength > MAX_ZIPBALL_BYTES) {
+    throw new Error("Marketplace-zip is te groot.");
+  }
+
+  const zip = await JSZip.loadAsync(buffer);
+  const rootPrefix = `plugins/${pluginId}/`;
   const files: Array<{ relative: string; bytes: Buffer }> = [];
   let total = 0;
 
-  async function walk(dirPath: string) {
-    const entries = await listGithubDir(owner, repo, dirPath, ref);
-    for (const entry of entries) {
-      if (entry.type === "dir") {
-        await walk(entry.path);
-        continue;
-      }
-      if (entry.type !== "file" || !entry.download_url) continue;
-      const relative = entry.path.slice(root.length + 1);
-      if (!relative || relative.includes("..")) throw new Error("Ongeldig pad in plugin.");
-      if (relative !== "manifest.json" && !relative.startsWith("ui/")) {
-        throw new Error(`Bestand buiten ui/ niet toegestaan: ${relative}`);
-      }
-      const size = Number(entry.size ?? 0);
-      if (size > MAX_ZIP_BYTES || total + size > MAX_ZIP_BYTES) {
-        throw new Error("Plugin-pakket is groter dan 2 MB.");
-      }
-      const fileRes = await fetchWithTimeout(entry.download_url);
-      if (!fileRes.ok) throw new Error(`Kon ${relative} niet downloaden.`);
-      const bytes = Buffer.from(await fileRes.arrayBuffer());
-      total += bytes.byteLength;
-      if (total > MAX_ZIP_BYTES) throw new Error("Plugin-pakket is groter dan 2 MB.");
-      files.push({ relative, bytes });
+  for (const [entryPath, entry] of Object.entries(zip.files)) {
+    if (entry.dir) continue;
+    const marker = entryPath.indexOf(rootPrefix);
+    if (marker === -1) continue;
+    // Require a path segment boundary before plugins/<id>/ (zip root folder).
+    if (marker > 0 && entryPath[marker - 1] !== "/") continue;
+    const relative = entryPath.slice(marker + rootPrefix.length);
+    if (!relative || relative.includes("..")) throw new Error("Ongeldig pad in plugin.");
+    if (relative !== "manifest.json" && !relative.startsWith("ui/")) {
+      throw new Error(`Bestand buiten ui/ niet toegestaan: ${relative}`);
     }
+    const bytes = Buffer.from(await entry.async("uint8array"));
+    total += bytes.byteLength;
+    if (total > MAX_ZIP_BYTES) throw new Error("Plugin-pakket is groter dan 2 MB.");
+    files.push({ relative, bytes });
   }
 
-  await walk(root);
   if (!files.some((file) => file.relative === "manifest.json")) {
-    throw new Error("manifest.json ontbreekt in de plugin.");
+    throw new Error("Plugin niet gevonden in de catalogus-repo.");
   }
   return files;
 }
@@ -263,7 +352,7 @@ async function zipPluginFiles(files: Array<{ relative: string; bytes: Buffer }>)
 
 async function downloadZip(url: string, expectedSha256?: string): Promise<Buffer> {
   assertAllowedDownloadUrl(url);
-  const response = await fetchWithTimeout(url);
+  const response = await fetchWithRetry(url);
   if (!response.ok) throw new Error(`Download mislukt (${response.status}).`);
   const buffer = Buffer.from(await response.arrayBuffer());
   if (buffer.byteLength > MAX_ZIP_BYTES) throw new Error("Plugin-zip is groter dan 2 MB.");
@@ -289,7 +378,7 @@ export async function installFromStore(id: string): Promise<{
     buffer = await downloadZip(store.downloadUrl, store.sha256);
   } else {
     const { owner, repo } = storeRepo();
-    const files = await collectPluginFiles(owner, repo, store.id, storeRef());
+    const files = await collectPluginFilesFromZipball(owner, repo, store.id, storeRef());
     // Ensure catalog metadata matches the package we are about to install.
     const manifestFile = files.find((file) => file.relative === "manifest.json");
     if (!manifestFile) throw new Error("manifest.json ontbreekt.");
@@ -300,6 +389,8 @@ export async function installFromStore(id: string): Promise<{
     buffer = await zipPluginFiles(files);
   }
 
+  // Fresh catalog next marketplace open so updateAvailable reflects the install.
+  clearPluginCatalogCache();
   const plugin = await installPluginZip(buffer);
   return { plugin, store };
 }
