@@ -79,9 +79,10 @@ ingestelde ontwikkelmap. Klik **Laden** om de unpacked map te koppelen; **Herlad
 - `id`: kebab-case, uniek
 - `nav.icon`: Lucide-naam (PascalCase)
 - `permissions.api`: glob-paden die met `/rest/` beginnen; `*` matcht binnen één segment
-- Zijbalk- / widgetvolgorde stelt de gebruiker in onder **Plugins** (niet via het
-  manifest). Optioneel legacy `nav.order` wordt alleen als startwaarde gebruikt
-  tot de gebruiker een eigen volgorde zet.
+- Zijbalk- / widgetvolgorde stelt de gebruiker in onder **Plugins** door te
+  slepen (pagina’s en widgets apart; niet via het manifest). Optioneel legacy
+  `nav.order` wordt alleen als startwaarde gebruikt tot de gebruiker een eigen
+  volgorde zet.
 
 ## HTML (`ui/index.html`)
 

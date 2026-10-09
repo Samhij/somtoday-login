@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { GraduationCap, Puzzle, Settings2 } from "lucide-react";
+import { GraduationCap, GripVertical, Puzzle, Settings2 } from "lucide-react";
 import { OverviewPage } from "@/app/components/OverviewPage";
 import { PluginFrame } from "@/app/components/PluginFrame";
 import { resolvePluginIcon } from "@/lib/plugins/icons";
@@ -93,6 +93,9 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
   const [devPlugins, setDevPlugins] = useState<DevPluginListing[]>([]);
   const [devLoadingId, setDevLoadingId] = useState<string | null>(null);
   const [reloadTokens, setReloadTokens] = useState<Record<string, number>>({});
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [orderSaving, setOrderSaving] = useState(false);
 
   const bumpReload = useCallback((id: string) => {
     setReloadTokens((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
@@ -286,6 +289,17 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     [plugins],
   );
 
+  /** Installed pages (sidebar order) — independent from widgets. */
+  const installedPages = useMemo(
+    () => plugins.filter((plugin) => (plugin.kind ?? "page") === "page"),
+    [plugins],
+  );
+  /** Installed widgets (Overview order) — independent from pages. */
+  const installedWidgets = useMemo(
+    () => plugins.filter((plugin) => plugin.kind === "widget"),
+    [plugins],
+  );
+
   const storeById = useMemo(
     () => new Map(storePlugins.map((entry) => [entry.id, entry])),
     [storePlugins],
@@ -336,19 +350,121 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
     await loadPlugins();
   }
 
-  async function setPluginNavOrder(id: string, order: number) {
-    setError(null);
-    const response = await fetch(`/api/plugins/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ order }),
+  function reorderPluginList(
+    list: PluginSummary[],
+    fromId: string,
+    toId: string,
+  ): PluginSummary[] | null {
+    const from = list.findIndex((plugin) => plugin.id === fromId);
+    const to = list.findIndex((plugin) => plugin.id === toId);
+    if (from < 0 || to < 0 || from === to) return null;
+    const next = [...list];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    return next;
+  }
+
+  function applyLocalKindOrder(ordered: PluginSummary[]) {
+    const orderById = new Map(ordered.map((plugin, index) => [plugin.id, index]));
+    setPlugins((prev) => {
+      const updated = prev.map((plugin) => {
+        const nextOrder = orderById.get(plugin.id);
+        if (nextOrder === undefined) return plugin;
+        return { ...plugin, nav: { ...plugin.nav, order: nextOrder } };
+      });
+      return updated.sort((a, b) => {
+        const order = a.nav.order - b.nav.order;
+        if (order !== 0) return order;
+        return a.nav.label.localeCompare(b.nav.label, "nl");
+      });
     });
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(payload.error || "Volgorde opslaan mislukt.");
-      return;
+  }
+
+  async function persistKindOrder(ordered: PluginSummary[]) {
+    setError(null);
+    setOrderSaving(true);
+    applyLocalKindOrder(ordered);
+    try {
+      const response = await fetch("/api/plugins/order", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orderedIds: ordered.map((plugin) => plugin.id) }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setError(payload.error || "Volgorde opslaan mislukt.");
+        await loadPlugins();
+        return;
+      }
+      await loadPlugins();
+    } finally {
+      setOrderSaving(false);
     }
-    await loadPlugins();
+  }
+
+  async function moveInstalledPlugin(
+    kind: PluginKind,
+    fromId: string,
+    toId: string,
+  ) {
+    const list = kind === "widget" ? installedWidgets : installedPages;
+    const next = reorderPluginList(list, fromId, toId);
+    if (!next) return;
+    await persistKindOrder(next);
+  }
+
+  function onPluginDragStart(event: ReactDragEvent<HTMLElement>, pluginId: string) {
+    setDraggingId(pluginId);
+    setDragOverId(null);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", pluginId);
+  }
+
+  function onPluginDragOver(
+    event: ReactDragEvent<HTMLElement>,
+    kind: PluginKind,
+    pluginId: string,
+  ) {
+    const list = kind === "widget" ? installedWidgets : installedPages;
+    const sourceId = draggingId;
+    if (!sourceId || !list.some((plugin) => plugin.id === sourceId)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    if (dragOverId !== pluginId) setDragOverId(pluginId);
+  }
+
+  function onPluginDragEnd() {
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
+  async function onPluginDrop(
+    event: ReactDragEvent<HTMLElement>,
+    kind: PluginKind,
+    targetId: string,
+  ) {
+    event.preventDefault();
+    const fromId = event.dataTransfer.getData("text/plain") || draggingId;
+    setDraggingId(null);
+    setDragOverId(null);
+    if (!fromId || fromId === targetId || orderSaving) return;
+    await moveInstalledPlugin(kind, fromId, targetId);
+  }
+
+  async function onPluginHandleKeyDown(
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    kind: PluginKind,
+    pluginId: string,
+  ) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const list = kind === "widget" ? installedWidgets : installedPages;
+    const index = list.findIndex((plugin) => plugin.id === pluginId);
+    if (index < 0) return;
+    const targetIndex = event.key === "ArrowUp" ? index - 1 : index + 1;
+    const target = list[targetIndex];
+    if (!target || orderSaving) return;
+    await moveInstalledPlugin(kind, pluginId, target.id);
   }
 
   async function remove(id: string, name: string) {
@@ -527,6 +643,101 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
 
   const showDesktopBanner = Boolean(desktopUpdate) && !desktopUpdateDismissed;
   const installBusy = Boolean(installingId) || bulkUpdating;
+
+  function renderInstalledPluginRow(plugin: PluginSummary, kind: PluginKind) {
+    const listing = storeById.get(plugin.id);
+    const updateAvailable = outdatedById.has(plugin.id);
+    const Icon = resolvePluginIcon(plugin.nav.icon) || Puzzle;
+    const isDragging = draggingId === plugin.id;
+    const isDropTarget = dragOverId === plugin.id && draggingId !== plugin.id;
+    const rowClass = [
+      "plugin-row",
+      "plugin-row-sortable",
+      plugin.enabled ? "" : "plugin-row-disabled",
+      isDragging ? "plugin-row-dragging" : "",
+      isDropTarget ? "plugin-row-drop-target" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <li
+        key={plugin.id}
+        className={rowClass}
+        onDragOver={(event) => onPluginDragOver(event, kind, plugin.id)}
+        onDrop={(event) => void onPluginDrop(event, kind, plugin.id)}
+      >
+        <button
+          type="button"
+          className="plugin-drag-handle"
+          draggable={!orderSaving}
+          aria-label={`${plugin.name} verslepen. Gebruik pijltjestoetsen om te verplaatsen.`}
+          aria-grabbed={isDragging}
+          disabled={orderSaving}
+          onDragStart={(event) => onPluginDragStart(event, plugin.id)}
+          onDragEnd={onPluginDragEnd}
+          onKeyDown={(event) => void onPluginHandleKeyDown(event, kind, plugin.id)}
+        >
+          <GripVertical size={16} strokeWidth={2} aria-hidden />
+        </button>
+        <div className="plugin-main">
+          <div className="plugin-title-row">
+            <Icon size={18} strokeWidth={2} aria-hidden />
+            <strong>{plugin.name}</strong>
+          </div>
+          <div className="plugin-status" aria-label="Status">
+            <span
+              className={
+                plugin.enabled ? "status-chip status-chip-on" : "status-chip status-chip-off"
+              }
+            >
+              {plugin.enabled ? "Aan" : "Uit"}
+            </span>
+            <span className="status-chip">{kind === "widget" ? "Widget" : "Pagina"}</span>
+            <span className="status-chip">v{plugin.version}</span>
+            {updateAvailable && listing ? (
+              <span className="status-chip status-chip-update">Update v{listing.version}</span>
+            ) : null}
+            {plugin.devPreview ? <span className="status-chip">Voorbeeld</span> : null}
+            {plugin.builtin ? <span className="status-chip">Ingebouwd</span> : null}
+            {plugin.author ? (
+              <span className="status-chip status-chip-quiet">{plugin.author}</span>
+            ) : null}
+          </div>
+          {plugin.description ? <p className="meta">{plugin.description}</p> : null}
+        </div>
+        <div className="plugin-actions">
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={plugin.enabled}
+              onChange={(event) => void togglePlugin(plugin.id, event.target.checked)}
+            />
+            <span>{plugin.enabled ? "Aan" : "Uit"}</span>
+          </label>
+          {plugin.devPreview ? (
+            <button
+              className="ghost"
+              type="button"
+              disabled={Boolean(devLoadingId)}
+              onClick={() => void loadOrReloadDevPlugin(plugin.id, "reload")}
+            >
+              {devLoadingId === plugin.id ? "Bezig…" : "Herladen"}
+            </button>
+          ) : null}
+          {plugin.removable ? (
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => void remove(plugin.id, plugin.name)}
+            >
+              Verwijderen
+            </button>
+          ) : null}
+        </div>
+      </li>
+    );
+  }
 
   return (
     <div className="app-shell fade-in">
@@ -727,8 +938,8 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                   <div className="manage-section-titles">
                     <h2 id="installed-heading">Geïnstalleerd</h2>
                     <p className="meta">
-                      Zet de volgorde (lager = eerder), schakel plugins aan of uit, of verwijder ze.
-                      Updates staan hierboven.
+                      Sleep plugins om de volgorde te zetten (pagina’s = zijbalk, widgets = Overzicht).
+                      Schakel aan of uit, of verwijder. Updates staan hierboven.
                     </p>
                   </div>
                   <span className="manage-count" aria-hidden>
@@ -758,124 +969,43 @@ export function AppShell({ schoolName, onSignOut, themeToggle }: Props) {
                     Nog geen plugins geïnstalleerd. Open de marketplace of upload een zip.
                   </p>
                 ) : (
-                  <ul className="plugin-list">
-                    {plugins.map((plugin) => {
-                      const listing = storeById.get(plugin.id);
-                      const updateAvailable = outdatedById.has(plugin.id);
-                      const Icon = resolvePluginIcon(plugin.nav.icon) || Puzzle;
-                      return (
-                        <li
-                          key={plugin.id}
-                          className={
-                            plugin.enabled ? "plugin-row" : "plugin-row plugin-row-disabled"
-                          }
-                        >
-                          <div className="plugin-main">
-                            <div className="plugin-title-row">
-                              <Icon size={18} strokeWidth={2} aria-hidden />
-                              <strong>{plugin.name}</strong>
-                            </div>
-                            <div className="plugin-status" aria-label="Status">
-                              <span
-                                className={
-                                  plugin.enabled
-                                    ? "status-chip status-chip-on"
-                                    : "status-chip status-chip-off"
-                                }
-                              >
-                                {plugin.enabled ? "Aan" : "Uit"}
-                              </span>
-                              <span className="status-chip">
-                                {(plugin.kind ?? "page") === "widget" ? "Widget" : "Pagina"}
-                              </span>
-                              <span className="status-chip">v{plugin.version}</span>
-                              {updateAvailable && listing ? (
-                                <span className="status-chip status-chip-update">
-                                  Update v{listing.version}
-                                </span>
-                              ) : null}
-                              {plugin.devPreview ? (
-                                <span className="status-chip">Voorbeeld</span>
-                              ) : null}
-                              {plugin.builtin ? (
-                                <span className="status-chip">Ingebouwd</span>
-                              ) : null}
-                              {plugin.author ? (
-                                <span className="status-chip status-chip-quiet">{plugin.author}</span>
-                              ) : null}
-                            </div>
-                            {plugin.description ? (
-                              <p className="meta">{plugin.description}</p>
-                            ) : null}
-                          </div>
-                          <div className="plugin-actions">
-                            <label className="plugin-order">
-                              <span>Volgorde</span>
-                              <input
-                                type="number"
-                                inputMode="numeric"
-                                step={1}
-                                value={plugin.nav.order}
-                                aria-label={`Volgorde van ${plugin.name}`}
-                                onChange={(event) => {
-                                  const next = Number(event.target.value);
-                                  if (!Number.isFinite(next)) return;
-                                  setPlugins((prev) =>
-                                    prev.map((item) =>
-                                      item.id === plugin.id
-                                        ? { ...item, nav: { ...item.nav, order: Math.trunc(next) } }
-                                        : item,
-                                    ),
-                                  );
-                                }}
-                                onBlur={(event) => {
-                                  const next = Number(event.target.value);
-                                  if (!Number.isFinite(next)) {
-                                    void loadPlugins();
-                                    return;
-                                  }
-                                  void setPluginNavOrder(plugin.id, Math.trunc(next));
-                                }}
-                                onKeyDown={(event) => {
-                                  if (event.key !== "Enter") return;
-                                  event.currentTarget.blur();
-                                }}
-                              />
-                            </label>
-                            <label className="switch">
-                              <input
-                                type="checkbox"
-                                checked={plugin.enabled}
-                                onChange={(event) =>
-                                  void togglePlugin(plugin.id, event.target.checked)
-                                }
-                              />
-                              <span>{plugin.enabled ? "Aan" : "Uit"}</span>
-                            </label>
-                            {plugin.devPreview ? (
-                              <button
-                                className="ghost"
-                                type="button"
-                                disabled={Boolean(devLoadingId)}
-                                onClick={() => void loadOrReloadDevPlugin(plugin.id, "reload")}
-                              >
-                                {devLoadingId === plugin.id ? "Bezig…" : "Herladen"}
-                              </button>
-                            ) : null}
-                            {plugin.removable ? (
-                              <button
-                                className="ghost"
-                                type="button"
-                                onClick={() => void remove(plugin.id, plugin.name)}
-                              >
-                                Verwijderen
-                              </button>
-                            ) : null}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="installed-groups">
+                    <div className="installed-group" aria-labelledby="installed-pages-heading">
+                      <div className="installed-group-head">
+                        <h3 id="installed-pages-heading">Pagina’s</h3>
+                        <p className="meta">Volgorde in de zijbalk</p>
+                        <span className="manage-count" aria-hidden>
+                          {installedPages.length}
+                        </span>
+                      </div>
+                      {installedPages.length === 0 ? (
+                        <p className="empty manage-empty">Geen pagina-plugins geïnstalleerd.</p>
+                      ) : (
+                        <ul className="plugin-list plugin-list-sortable">
+                          {installedPages.map((plugin) => renderInstalledPluginRow(plugin, "page"))}
+                        </ul>
+                      )}
+                    </div>
+
+                    <div className="installed-group" aria-labelledby="installed-widgets-heading">
+                      <div className="installed-group-head">
+                        <h3 id="installed-widgets-heading">Widgets</h3>
+                        <p className="meta">Volgorde op Overzicht</p>
+                        <span className="manage-count" aria-hidden>
+                          {installedWidgets.length}
+                        </span>
+                      </div>
+                      {installedWidgets.length === 0 ? (
+                        <p className="empty manage-empty">Geen widgets geïnstalleerd.</p>
+                      ) : (
+                        <ul className="plugin-list plugin-list-sortable">
+                          {installedWidgets.map((plugin) =>
+                            renderInstalledPluginRow(plugin, "widget"),
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
                 )}
               </section>
 
