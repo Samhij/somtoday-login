@@ -3,7 +3,8 @@ import path from "node:path";
 import { dataDir } from "@/lib/data-dir";
 
 /**
- * Per-plugin sidebar / Overview sort keys under CYFERS_DATA_DIR.
+ * Per-plugin sort keys under CYFERS_DATA_DIR (shared map; pages and widgets
+ * are ordered independently in the UI / sidebar vs Overview).
  * Overrides legacy manifest `nav.order` when set.
  */
 export type PluginOrderPrefs = {
@@ -98,19 +99,46 @@ export async function getPluginOrderMap(): Promise<Record<string, number>> {
 }
 
 export async function setPluginOrder(id: string, order: number): Promise<PluginOrderPrefs> {
-  const key = id.trim();
-  if (!key) throw new Error("Plugin-id ontbreekt.");
-  if (!Number.isFinite(order)) throw new Error("Volgorde moet een getal zijn.");
+  return setPluginOrders({ [id]: order });
+}
+
+/** Atomically merge several id → order updates (e.g. after drag-reorder). */
+export async function setPluginOrders(
+  updates: Record<string, number>,
+): Promise<PluginOrderPrefs> {
+  const entries = Object.entries(updates);
+  if (entries.length === 0) {
+    await ensureLoaded();
+    return globalOrders.__cyfersPluginOrderPrefs ?? emptyPrefs();
+  }
 
   await ensureLoaded();
   const current = globalOrders.__cyfersPluginOrderPrefs ?? emptyPrefs();
-  const prefs: PluginOrderPrefs = {
-    orders: { ...current.orders, [key]: Math.trunc(order) },
-    updatedAt: Date.now(),
-  };
+  const orders = { ...current.orders };
+  for (const [id, order] of entries) {
+    const key = id.trim();
+    if (!key) throw new Error("Plugin-id ontbreekt.");
+    if (!Number.isFinite(order)) throw new Error("Volgorde moet een getal zijn.");
+    orders[key] = Math.trunc(order);
+  }
+  const prefs: PluginOrderPrefs = { orders, updatedAt: Date.now() };
   globalOrders.__cyfersPluginOrderPrefs = prefs;
   await queuePersist(prefs);
   return prefs;
+}
+
+/**
+ * Assign sequential sort keys (0…n-1) for the given ids.
+ * Other plugins keep their saved orders unchanged.
+ */
+export async function applyPluginOrderSequence(orderedIds: string[]): Promise<PluginOrderPrefs> {
+  const updates: Record<string, number> = {};
+  orderedIds.forEach((id, index) => {
+    const key = id.trim();
+    if (!key) throw new Error("Plugin-id ontbreekt.");
+    updates[key] = index;
+  });
+  return setPluginOrders(updates);
 }
 
 /** Drop a plugin’s saved order (e.g. after uninstall). */

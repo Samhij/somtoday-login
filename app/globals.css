@@ -1019,8 +1019,58 @@ html[data-theme="dark"] .modal-backdrop {
   border-bottom: 1px solid var(--line);
 }
 
+.plugin-row-sortable {
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.plugin-row-dragging {
+  opacity: 0.45;
+}
+
+.plugin-row-drop-target {
+  border-top-color: var(--accent);
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
+
 .plugin-row .meta {
   margin: 0.4rem 0 0;
+}
+
+.plugin-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+}
+
+.plugin-drag-handle:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--bg-elevated, transparent);
+}
+
+.plugin-drag-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.plugin-drag-handle:active:not(:disabled) {
+  cursor: grabbing;
+}
+
+.plugin-drag-handle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .plugin-actions {
@@ -1036,36 +1086,37 @@ html[data-theme="dark"] .modal-backdrop {
   font-size: 0.92rem;
 }
 
-.plugin-order {
+.installed-groups {
+  display: grid;
+  gap: 1.75rem;
+  margin-top: 0.75rem;
+}
+
+.installed-group-head {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.85rem;
 }
 
-.plugin-order input {
-  width: 4.5rem;
-  padding: 0.35rem 0.45rem;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  background: var(--bg-elevated, transparent);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.92rem;
-  font-weight: 600;
-  text-align: right;
-  text-transform: none;
-  letter-spacing: 0;
+.installed-group-head h3 {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
-.plugin-order input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+.installed-group-head .meta {
+  margin: 0;
+  flex: 1;
+}
+
+.installed-group .plugin-list {
+  margin-top: 0.35rem;
+}
+
+.installed-group .manage-empty {
+  margin-top: 0.5rem;
 }
 
 .switch {
@@ -1098,6 +1149,16 @@ html[data-theme="dark"] .modal-backdrop {
   .plugin-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .plugin-row-sortable {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+
+  .plugin-row-sortable .plugin-actions {
+    grid-column: 2;
   }
 
   .plugin-actions {
