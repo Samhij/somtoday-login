@@ -276,11 +276,13 @@ function clientIdFrom(refreshToken: string) {
 }
 
 export async function refreshTokens(refreshToken: string): Promise<TokenResponse> {
-  const response = await fetch("https://somtoday.nl/oauth2/token", {
+  // Canonical IdP token endpoint (somtoday.nl/oauth2/token only 308-redirects here).
+  const response = await fetch("https://inloggen.somtoday.nl/oauth2/token", {
     method: "POST",
     headers: {
       "content-type": "application/x-www-form-urlencoded",
       accept: "application/json",
+      "user-agent": BROWSER,
     },
     body: new URLSearchParams({
       grant_type: "refresh_token",
@@ -500,20 +502,36 @@ function studentName(student: SomtodayStudent) {
   return [student.roepnaam, student.tussenvoegsel, student.achternaam].filter(Boolean).join(" ");
 }
 
-let refreshChain: Promise<void> = Promise.resolve();
+const refreshGlobal = globalThis as typeof globalThis & {
+  __somRefreshChain?: Promise<unknown>;
+};
+
+function refreshChain(): Promise<unknown> {
+  return refreshGlobal.__somRefreshChain ?? Promise.resolve();
+}
 
 async function withRefreshLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = refreshChain.then(fn, fn);
-  refreshChain = run.then(
+  const run = refreshChain().then(fn, fn);
+  refreshGlobal.__somRefreshChain = run.then(
     () => undefined,
     () => undefined,
   );
   return run;
 }
 
-async function applyTokens(session: StoredSession, force = false): Promise<void> {
+/**
+ * Refresh Somtoday tokens under a process-wide lock.
+ * When `failedAccessToken` is set (after a 401), skip if another waiter already
+ * rotated past that token — Somtoday refresh tokens are often single-use, and
+ * parallel plugin fetches used to cascade dozens of force-refreshes.
+ */
+async function applyTokens(session: StoredSession, failedAccessToken?: string): Promise<void> {
   await withRefreshLock(async () => {
-    if (!force && Date.now() <= session.expiresAt - 60_000) return;
+    if (failedAccessToken) {
+      if (session.accessToken !== failedAccessToken) return;
+    } else if (Date.now() <= session.expiresAt - 60_000) {
+      return;
+    }
     const tokens = await refreshTokens(session.refreshToken);
     session.accessToken = tokens.access_token;
     session.refreshToken = tokens.refresh_token;
@@ -525,8 +543,9 @@ async function applyTokens(session: StoredSession, force = false): Promise<void>
 }
 
 async function ensureFreshSession(session: StoredSession): Promise<StoredSession> {
+  // Cheap check outside the lock; applyTokens re-checks under the lock.
   if (Date.now() <= session.expiresAt - 60_000) return session;
-  await applyTokens(session, false);
+  await applyTokens(session);
   return session;
 }
 
@@ -548,10 +567,11 @@ export async function somFetch(
   const body =
     typeof init?.body === "string" ? init.body : init?.body == null ? undefined : String(init.body);
   const url = `${session.apiUrl.replace(/\/$/, "")}${path}`;
+  const usedAccessToken = session.accessToken;
   const response = await nodeFetch(url, { method, headers, body });
   if (response.status !== 401) return response;
 
-  await applyTokens(session, true);
+  await applyTokens(session, usedAccessToken);
   headers.authorization = `Bearer ${session.accessToken}`;
   return nodeFetch(url, { method, headers, body });
 }

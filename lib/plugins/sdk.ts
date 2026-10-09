@@ -51,7 +51,11 @@ export const CYFERS_SDK_SOURCE = `
         body: init.body
       }).then(function (result) {
         if (!result || result.ok === false) {
-          throw new Error("API-verzoek mislukt");
+          var detail =
+            (result && result.error) ||
+            (result && result.status ? "HTTP " + result.status : null) ||
+            "API-verzoek mislukt";
+          throw new Error(detail);
         }
         return result.data;
       });

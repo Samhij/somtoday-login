@@ -18,7 +18,7 @@ type SessionStore = Map<string, StoredSession>;
 
 const globalStore = globalThis as typeof globalThis & {
   __somSessions?: SessionStore;
-  __somSessionsLoaded?: boolean;
+  __somSessionsLoadPromise?: Promise<void>;
   __somSessionsWrite?: Promise<void>;
 };
 
@@ -73,21 +73,50 @@ function queuePersist() {
   return globalStore.__somSessionsWrite;
 }
 
-async function ensureLoaded() {
-  if (globalStore.__somSessionsLoaded) return;
-  globalStore.__somSessionsLoaded = true;
+async function loadFromDisk() {
   if (!globalStore.__somSessions) globalStore.__somSessions = new Map();
   try {
     const raw = await fs.readFile(sessionsPath());
     const parsed = JSON.parse(decrypt(raw)) as Record<string, StoredSession>;
     for (const [id, session] of Object.entries(parsed)) {
       if (session?.accessToken && session?.refreshToken) {
-        globalStore.__somSessions.set(id, session);
+        // Prefer in-memory tokens when already present (may be newer than disk).
+        if (!globalStore.__somSessions.has(id)) {
+          globalStore.__somSessions.set(id, session);
+        }
       }
     }
   } catch {
     // missing or corrupt file — start empty
   }
+}
+
+async function ensureLoaded() {
+  if (!globalStore.__somSessionsLoadPromise) {
+    globalStore.__somSessionsLoadPromise = loadFromDisk();
+  }
+  await globalStore.__somSessionsLoadPromise;
+}
+
+/**
+ * Cookie id present but missing from the in-memory map (e.g. after a partial
+ * clear or a failed first-load race). Re-read disk once so Ctrl+R / plugin
+ * fetches can recover without a full app restart.
+ */
+async function rehydrateMissing(id: string): Promise<StoredSession | null> {
+  if (store().has(id)) return store().get(id) ?? null;
+  try {
+    const raw = await fs.readFile(sessionsPath());
+    const parsed = JSON.parse(decrypt(raw)) as Record<string, StoredSession>;
+    const session = parsed[id];
+    if (session?.accessToken && session?.refreshToken) {
+      store().set(id, session);
+      return session;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }
 
 function store(): SessionStore {
@@ -107,7 +136,7 @@ export async function readSession(): Promise<StoredSession | null> {
   const jar = await cookies();
   const id = jar.get(COOKIE)?.value;
   if (!id) return null;
-  return store().get(id) ?? null;
+  return store().get(id) ?? (await rehydrateMissing(id));
 }
 
 export async function writeSession(session: StoredSession): Promise<void> {
@@ -129,7 +158,17 @@ export async function writeSession(session: StoredSession): Promise<void> {
 export async function updateSession(session: StoredSession): Promise<void> {
   await ensureLoaded();
   const jar = await cookies();
-  const id = jar.get(COOKIE)?.value;
+  let id = jar.get(COOKIE)?.value;
+  // After long async work (token refresh), cookies() can occasionally lack the
+  // request jar. Fall back to the map entry that already holds this object.
+  if (!id) {
+    for (const [key, value] of store().entries()) {
+      if (value === session) {
+        id = key;
+        break;
+      }
+    }
+  }
   if (!id) return;
   store().set(id, session);
   await queuePersist();

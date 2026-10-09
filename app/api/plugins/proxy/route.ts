@@ -85,13 +85,24 @@ export async function POST(request: Request) {
       }
     }
 
+    const error =
+      response.ok
+        ? undefined
+        : response.status === 401 || response.status === 403
+          ? "Je sessie is verlopen of niet gemachtigd."
+          : response.status === 429
+            ? "Te veel verzoeken naar Somtoday. Probeer later opnieuw."
+            : `Somtoday gaf HTTP ${response.status}.`;
+
     return NextResponse.json({
       ok: response.ok,
       status: response.status,
       data,
+      ...(error ? { error } : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Proxy mislukt.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    const expired = /sessie is verlopen|opnieuw in/i.test(message);
+    return NextResponse.json({ error: message }, { status: expired ? 401 : 502 });
   }
 }
