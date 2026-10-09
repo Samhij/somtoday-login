@@ -132,6 +132,12 @@ catalog versions are newer.
 - Packaged Electron only — `npm run dev` has no update checks.
 - Feed: GitHub Releases for `samhij/somtoday-login` (`latest*.yml` + installers / mac zip /
   blockmaps uploaded by `.github/workflows/release.yml`).
+- **Windows NSIS filename must have no spaces.** Default electron-builder name is
+  `Cyfers Setup ${version}.exe`; `latest.yml` sanitizes spaces to dashes
+  (`Cyfers-Setup-….exe`) while GitHub Releases renames spaces to periods
+  (`Cyfers.Setup.….exe`), so the updater 404s. Keep `win`/`nsis` `artifactName` as
+  `${productName}-Setup-${version}.${ext}` so disk file, `latest.yml`, and GitHub
+  assets stay in sync.
 - **Linux in-app channel = AppImage only** (`process.env.APPIMAGE`). `.deb`, AUR, and other
   package installs must **not** run `checkForUpdates` or show the Installeren banner —
   users update those manually via their package manager. Windows NSIS and mac zip keep

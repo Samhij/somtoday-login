@@ -115,12 +115,23 @@ jobs:
             release/*.dmg \
             release/*.exe \
             release/*.zip \
-            release/*Setup*.exe \
             release/latest*.yml \
             release/*.blockmap
           do
             cp "$f" dist-artifacts/
           done
+          # Windows NSIS must be dash-named (no spaces). GitHub renames spaces to
+          # periods; latest.yml uses dashes — mismatch breaks electron-updater.
+          if compgen -G 'dist-artifacts/*Setup*.exe' > /dev/null; then
+            for f in dist-artifacts/*Setup*.exe dist-artifacts/*Setup*.exe.blockmap; do
+              [ -e "$f" ] || continue
+              base=$(basename "$f")
+              if [[ "$base" == *" "* ]] || [[ "$base" == *".Setup."* ]]; then
+                echo "ERROR: Windows installer must use dashes (Cyfers-Setup-*.exe), got: $base" >&2
+                exit 1
+              fi
+            done
+          fi
           ls -lh dist-artifacts
 
       - uses: actions/upload-artifact@v4
