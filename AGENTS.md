@@ -197,6 +197,9 @@ are intentionally out of scope for this change set.
 | `CYFERS_SESSION_KEY` | AES key material for session file |
 | `CYFERS_SSO_URL` / `CYFERS_SSO_SECRET` | Localhost bridge for SSO capture |
 | `CYFERS_PLUGIN_STORE_URL` | Override marketplace catalog URL |
+| `CYFERS_PLUGIN_STORE_REPO` | Marketplace GitHub `owner/repo` (default `cyfers-somtoday/cyfer-plugins`) |
+| `CYFERS_PLUGIN_STORE_REF` | Branch/tag/SHA for catalog + zipball installs (default `main`) |
+| `CYFERS_GITHUB_TOKEN` / `GITHUB_TOKEN` | Optional PAT for catalog Contents API (raises 60/hr unauth limit); installs use codeload zipball and do not need this |
 | `CYFERS_PLUGIN_DEV_DIR` | Unpacked plugins root for preview (opt-in; required in packaged builds) |
 | `CYFERS_UNPACKAGED` | Set by Electron when `!app.isPackaged`; allows sibling `../cyfer-plugins/plugins` |
 | `permissions.api` | Per-plugin Somtoday path globs |
