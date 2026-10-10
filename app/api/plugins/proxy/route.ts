@@ -63,7 +63,9 @@ export async function POST(request: Request) {
     if (payload.length > MAX_BODY) {
       return NextResponse.json({ error: "Request body te groot." }, { status: 413 });
     }
-    if (!headers["content-type"]) headers["content-type"] = "application/json";
+    if (!headers["content-type"]) {
+      headers["content-type"] = "application/vnd.topicus.platinum+json; charset=utf-8";
+    }
   }
 
   try {
