@@ -238,7 +238,7 @@ export function PluginFrame({ pluginId, context, variant = "page", reloadToken =
       ref={iframeRef}
       className={variant === "widget" ? "plugin-frame plugin-frame-widget" : "plugin-frame"}
       title={pluginId}
-      sandbox="allow-scripts allow-forms"
+      sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
       srcDoc={srcdoc}
       onLoad={() => {
         iframeRef.current?.contentWindow?.postMessage(
