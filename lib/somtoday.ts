@@ -557,7 +557,11 @@ export async function somFetch(
   await ensureFreshSession(session);
   const method = (init?.method ?? "GET").toUpperCase();
   const headers = asHeaderRecord(init?.headers);
-  if (!headers.accept) headers.accept = "application/json";
+  // Match leerling-source RequestService (platinum). Plain application/json can
+  // omit nested collections such as boodschap.bijlages[].assemblyResults.
+  if (!headers.accept) {
+    headers.accept = "application/vnd.topicus.platinum+json; charset=utf-8";
+  }
   if (method === "GET" && !headers.range) headers.range = "items=0-99";
   headers.authorization = `Bearer ${session.accessToken}`;
   headers["user-agent"] = BROWSER;
