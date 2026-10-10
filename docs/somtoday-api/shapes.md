@@ -107,7 +107,7 @@ part; avoid UTC day-shift when rendering bars.
 | `onderwerp`, `inhoud`, `mimeType` | top-level |
 | `prioriteit` | `URGENT` \| `HOOG` \| `NORMAAL` \| `LAAG` |
 | `notificatieType` | large enum (`Bericht`, `Mededeling`, `Inlevering`, afspraak variants, …) |
-| `bijlages` | **spelling with e** — attachment array |
+| `bijlages` | **spelling with e** — attachment array; each has `omschrijving`, `assemblyResults[]` (`fileUrl`, `fileSize`, `fileExtension`, `assemblyFileType`, `fileName`) — open `fileUrl` externally (no separate download REST) |
 | `verzondenDoorGebruiker` | `additionalObjects` |
 | `verzenderCorrespondent` | `additionalObjects` → `{ naam, sorteerNaam, initialen, vakken[] }` |
 | `ontvangerCorrespondenten` | `additionalObjects.items` |
